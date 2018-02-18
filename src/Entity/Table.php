@@ -55,18 +55,7 @@ class Table
     /**
      * @var array
      */
-    private $seats = [
-        0 => null,
-        1 => null,
-        2 => null,
-        3 => null,
-        4 => null,
-        5 => null,
-        6 => null,
-        7 => null,
-        8 => null,
-        9 => null
-    ];
+    private $seats = [];
 
     /**
      * @var integer
@@ -100,6 +89,9 @@ class Table
     public function __construct(array $size = Table::SML_TABLE)
     {
         $this->size = $size;
+        foreach (range(0,Table::TABLE_SEATS - 1) as $seat) {
+            $this->seats[$seat] = null;
+        }
     }
 
     /**
@@ -234,10 +226,12 @@ class Table
 
     /**
      * @param int $amount
+     * @return int
      */
-    public function addChips(int $amount): void
+    public function addChips(int $amount): int
     {
         $this->chips += $amount;
+        return $amount;
     }
 
     /**

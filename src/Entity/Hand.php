@@ -16,6 +16,17 @@ namespace App\Entity;
 class Hand
 {
 
+    const SMALL_BLIND = "small blind";
+    const BIG_BLIND = "big blind";
+    const CALLED = "called";
+    const RAISED = "raised";
+    const FOLDED = "folded";
+    const CHECKED = "checked";
+    const BET = "bet";
+
+    const TURN = "turn";
+    const BUTTON = "button";
+
     /**
      * @var Table
      */
@@ -31,7 +42,15 @@ class Hand
      */
     private $turn = 0;
 
+    /**
+     * @var int
+     */
     private $betSize;
+
+    /**
+     * @var array
+     */
+    private $playerStatus = [];
 
     /**
      * Hand constructor.
@@ -40,16 +59,31 @@ class Hand
     public function __construct(Table $table)
     {
         $this->table = $table;
+
+        foreach (range(0, Table::TABLE_SEATS - 1) as $player) {
+            $this->playerStatus[$player] = [
+                "action" => null,
+                "chips" => 0
+            ];
+        }
+
+    }
+
+    public function updateStatus(string $action, int $chips = 0): void
+    {
+        $this->playerStatus[$this->turn]["action"] = $action;
+        $this->playerStatus[$this->turn]["chips"] += $chips;
+    }
+
+    public function getPlayerActionStatus(int $seat): string
+    {
+        return $this->playerStatus[$seat]["action"];
     }
 
     /**
-     * @param int $amount
+     * @param int $seat
+     * @return Player
      */
-    public function playerTransfers(int $amount): void
-    {
-        $this->table->addChips($this->getPlayer($this->turn)->betChips($amount));
-    }
-
     public function getPlayer(int $seat): Player
     {
         return $this->table->getSeat($seat);
@@ -76,7 +110,7 @@ class Hand
      */
     public function nextTurn(): void
     {
-        $this->selectNextPlayer("turn");
+        $this->selectNextPlayer(Hand::TURN);
     }
 
     /**
@@ -84,8 +118,18 @@ class Hand
      */
     public function nextButton(): void
     {
-        $this->selectNextPlayer("button");
+        $this->selectNextPlayer(Hand::BUTTON);
         $this->turn = $this->button;
+    }
+
+    private function isPlayer(int $seat): bool
+    {
+        return $this->table->getSeat($seat) instanceof Player;
+    }
+
+    private function isFolded(): bool
+    {
+        return $this->playerStatus[$this->turn]['action'] == Hand::FOLDED;
     }
 
     /**
@@ -98,8 +142,35 @@ class Hand
         while (true)
         {
             if (++$this->$type >= Table::TABLE_SEATS) $this->$type = 0;
-            if ($this->table->getSeat($this->$type) instanceof Player) break;
+            if ($this->isPlayer($this->$type)) {
+                if ($type == Hand::TURN && $this->isFolded()) continue;
+                break;
+            }
         }
+    }
+
+    /**
+     *
+     * @param int $amount
+     * @return int
+     */
+    public function playerTransfers(int $amount): int
+    {
+        return $this->table->addChips($this->getPlayer($this->turn)->betChips($amount));
+    }
+
+    private function transferSmallBlind(): void
+    {
+        $blind = $this->table->getSmallBlind();
+        $this->playerTransfers($blind);
+        $this->updateStatus(Hand::SMALL_BLIND, $blind);
+    }
+
+    private function transferBigBlind(): void
+    {
+        $blind = $this->table->getBigBlind();
+        $this->updateStatus(Hand::BIG_BLIND, $blind);
+        $this->betSize = $this->playerTransfers($blind);
     }
 
     /**
@@ -108,24 +179,40 @@ class Hand
     public function takeSmallBigBlind(): void
     {
         $this->nextTurn();
-        $this->playerTransfers($this->table->getSmallBlind());
+        $this->transferSmallBlind();
         $this->nextTurn();
-        $this->playerTransfers($this->table->getBigBlind());
-        $this->betSize = $this->table->getBigBlind();
+        $this->transferBigBlind();
         $this->nextTurn();
     }
 
+    /**
+     *
+     */
     public function playerCalls(): void
     {
-        $this->playerTransfers($this->betSize);
+        $betSize = $this->betSize;
+        $this->playerTransfers($betSize);
+        $this->updateStatus(Hand::CALLED, $betSize);
         $this->nextTurn();
     }
 
+    /**
+     * @param int $amount
+     */
     public function playerRaises(int $amount): void
     {
         if ($amount < $this->betSize) return;
-        $this->playerTransfers($amount);
-        $this->betSize = $amount;
+        $this->betSize = $this->playerTransfers($amount);
+        $this->updateStatus(Hand::RAISED, $amount);
+        $this->nextTurn();
+    }
+
+    /**
+     *
+     */
+    public function playerFolds(): void
+    {
+        $this->updateStatus(Hand::FOLDED);
         $this->nextTurn();
     }
 }

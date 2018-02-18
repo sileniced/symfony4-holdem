@@ -50,7 +50,7 @@ class HandTest extends TestCase
         $this->assertEquals(1, $this->hand->getTurn());
     }
 
-    public function testThatTableCanSkipAPlayerForNextTurn()
+    public function testThatTableCanSkipASeatForNextTurn()
     {
         $this->assertEquals(0, $this->hand->getTurn());
         $this->table->removePlayer(1);
@@ -102,7 +102,20 @@ class HandTest extends TestCase
 
     public function testThatPlayerCanRaise()
     {
+        $this->hand->takeSmallBigBlind();
+        $this->hand->playerRaises(5);
+        $this->assertEquals(45, $this->table->getPlayerChips(3));
+        $this->assertEquals(4, $this->hand->getTurn());
+        $this->hand->playerCalls();
+        $this->assertEquals(45, $this->table->getPlayerChips(4));
+        $this->assertEquals(5, $this->hand->getTurn());
+    }
 
+    public function testThatPlayerCanFold()
+    {
+        $this->hand->takeSmallBigBlind();
+        $this->hand->playerFolds();
+        $this->assertEquals(Hand::FOLDED, $this->hand->getPlayerActionStatus(3));
     }
 
 }
