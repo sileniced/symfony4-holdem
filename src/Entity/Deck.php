@@ -47,8 +47,6 @@ class Deck
      */
     public function shuffle(): void
     {
-        if ($this->deck == null) $this->initialize();
-
         \shuffle($this->deck);
     }
 
@@ -58,14 +56,6 @@ class Deck
     public function getDeck(): array
     {
         return $this->deck;
-    }
-
-    /**
-     * @param mixed $deck
-     */
-    public function setDeck(array $deck): void
-    {
-        $this->deck = $deck;
     }
 
     /**
@@ -92,12 +82,22 @@ class Deck
         return array_pop($this->deck);
     }
 
+    public function takeFlop(): array
+    {
+        return [$this->takeTop(), $this->takeTop(), $this->takeTop()];
+    }
+
     /**
      *
      */
     public function burn(): void
     {
         unset($this->deck[$this->getAmount()]);
+    }
+
+    public function getCard(int $position): Card
+    {
+        return $this->deck[$position];
     }
 
 }

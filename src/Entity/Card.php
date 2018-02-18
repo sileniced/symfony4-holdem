@@ -42,27 +42,11 @@ class Card
     }
 
     /**
-     * @param mixed $suit
-     */
-    public function setSuit(int $suit): void
-    {
-        $this->suit = $suit;
-    }
-
-    /**
      * @return mixed
      */
     public function getRank(): int
     {
         return $this->rank;
-    }
-
-    /**
-     * @param mixed $rank
-     */
-    public function setRank(int $rank): void
-    {
-        $this->rank = $rank;
     }
 
     /**

@@ -21,22 +21,24 @@ class Player
     private $name;
 
     /**
-     * @var Card
+     * @var array
      */
-    private $card1;
+    private $cards;
 
     /**
-     * @var Card
+     * @var int
      */
-    private $card0;
+    private $chips;
 
     /**
      * Player constructor.
-     * @param $name
+     * @param string $name
+     * @param int $chips
      */
-    public function __construct($name)
+    public function __construct(string $name, int $chips)
     {
-        $this->setName($name);
+        $this->name = $name;
+        $this->chips = $chips;
     }
 
     /**
@@ -55,36 +57,14 @@ class Player
         $this->name = $name;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getCard0(): Card
+    public function getCard(int $card): Card
     {
-        return $this->card0;
+        return $this->cards[$card];
     }
 
-    /**
-     * @param mixed $card0
-     */
-    public function setCard0(Card $card0): void
+    public function addCard(Card $card): void
     {
-        $this->card0 = $card0;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getCard1(): Card
-    {
-        return $this->card1;
-    }
-
-    /**
-     * @param mixed $card1
-     */
-    public function setCard1(Card $card1): void
-    {
-        $this->card1 = $card1;
+        $this->cards[] = $card;
     }
 
     /**
@@ -92,7 +72,7 @@ class Player
      */
     public function getCards(): array
     {
-        return [$this->card0, $this->card1];
+        return $this->cards;
     }
 
     /**
@@ -100,9 +80,42 @@ class Player
      */
     public function setCards(array $cards): void
     {
-        $this->card0 = $cards[0];
-        $this->card1 = $cards[1];
+        $this->cards = $cards;
     }
 
+    /**
+     * @return int
+     */
+    public function getChips(): int
+    {
+        return $this->chips;
+    }
+
+    /**
+     * @param int $chips
+     */
+    public function setChips(int $chips): void
+    {
+        $this->chips = $chips;
+    }
+
+
+    /**
+     * @param int $amount
+     * @return int
+     */
+    public function betChips(int $amount): int
+    {
+        $this->chips -= $amount;
+        return $amount;
+    }
+
+    /**
+     * @param int $amount
+     */
+    public function winChips(int $amount): void
+    {
+        $this->chips += $amount;
+    }
 
 }

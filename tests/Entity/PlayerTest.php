@@ -27,12 +27,21 @@ class PlayerTest extends TestCase
     private $player;
 
     /**
+     * @var string
+     */
+    private $name = "nigel";
+
+    /**
+     * @var int
+     */
+    private $chips = 50;
+
+    /**
      *
      */
     public function setUp()
     {
-        $name = "Nigel";
-        $this->player = new Player($name);
+        $this->player = new Player($this->name, 50);
     }
 
     /**
@@ -40,7 +49,15 @@ class PlayerTest extends TestCase
      */
     public function testThatPlayerCanInsertName()
     {
-        $this->assertEquals("Nigel", $this->player->getName());
+        $this->assertEquals($this->name, $this->player->getName());
+    }
+
+    /**
+     *
+     */
+    public function testThatPlayerCanBringChips()
+    {
+        $this->assertEquals($this->chips, $this->player->getChips());
     }
 
     /**
@@ -65,8 +82,22 @@ class PlayerTest extends TestCase
 
         $this->player->setCards($cards);
 
-        $this->assertNotEquals($this->player->getCard0(), $this->player->getCard1());
+        $this->assertNotEquals(new Card(3, 12), $this->player->getCard(0));
+        $this->assertNotEquals($this->player->getCard(0), $this->player->getCard(1));
     }
+
+    public function testThatPlayerGetsDealtTwoCards()
+    {
+        $deck = new Deck(false);
+
+        $this->player->addCard($deck->takeTop());
+        $this->player->addCard($deck->takeTop());
+
+        $this->assertEquals(new Card(3, 12), $this->player->getCard(0));
+        $this->assertEquals(new Card(3, 11), $this->player->getCard(1));
+    }
+
+    
 
 
 }

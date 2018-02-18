@@ -33,7 +33,7 @@ class DeckTest extends TestCase
 
         $this->assertTrue($classIsCard);
         $this->assertCount(52, $deck->getDeck());
-        $this->assertEquals("3_12", $deck->getTop()->getCardCode());
+        $this->assertEquals(new Card(3, 12), $deck->getTop());
     }
 
     /**
@@ -43,7 +43,21 @@ class DeckTest extends TestCase
     {
         $deck = new Deck();
 
-        $this->assertNotEquals("3_12", $deck->getTop()->getCardCode());
+        $this->assertNotEquals(new Card(3, 12), $deck->getTop());
+    }
+
+    public function testThatDeckBurnsTopCard()
+    {
+        $deck = new Deck(false);
+
+        $this->assertEquals("3_12", $deck->getTop()->getCardCode());
+        $this->assertCount(52, $deck->getDeck());
+        $deck->burn();
+        $this->assertEquals("3_11", $deck->getTop()->getCardCode());
+        $this->assertCount(51, $deck->getDeck());
+        $deck->burn();
+        $this->assertEquals("3_10", $deck->getTop()->getCardCode());
+        $this->assertCount(50, $deck->getDeck());
     }
 
 }

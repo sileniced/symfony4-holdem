@@ -16,17 +16,72 @@ namespace App\Entity;
 class Table
 {
     /**
+     *
+     */
+    const SML_TABLE = [
+        "STD" => 50,
+        "MIN" => 2,
+        "MAX" => 20
+    ];
+
+    /**
+     *
+     */
+    const MED_TABLE = [
+        "STD" => 250,
+        "MIN" => 10,
+        "MAX" => 100
+    ];
+
+    /**
+     *
+     */
+    const BIG_TABLE = [
+        "STD" => 1000,
+        "MIN" => 50,
+        "MAX" => 500
+    ];
+
+    /**
+     *
+     */
+    const TABLE_SEATS = 10;
+
+    /**
      * @var array
      */
-    private $players = [
+    private $size;
+
+    /**
+     * @var array
+     */
+    private $seats = [
         0 => null,
         1 => null,
         2 => null,
         3 => null,
         4 => null,
-        5 => null
+        5 => null,
+        6 => null,
+        7 => null,
+        8 => null,
+        9 => null
     ];
 
+    /**
+     * @var integer
+     */
+    private $chips = 0;
+
+    /**
+     * @var array
+     */
+    private $cards;
+
+    /**
+     * @var Deck
+     */
+    private $deck;
 
     /**
      * @var bool
@@ -34,22 +89,53 @@ class Table
     private $isFull = false;
 
     /**
-     * Table constructor.
-     * @param Player $player
-     * @param int $seat
+     * @var bool
      */
-    public function __construct(Player $player, int $seat = 6)
+    private $hasEnough = false;
+
+    /**
+     * Table constructor.
+     * @param array $size
+     */
+    public function __construct(array $size = Table::SML_TABLE)
     {
-        $this->addPlayer($player, $seat);
+        $this->size = $size;
     }
 
     /**
      * @param int $seat
      * @return Player
      */
-    public function getPlayer(int $seat): Player
+    public function getSeat(int $seat): ?Player
     {
-        return $this->players[$seat];
+        return $this->seats[$seat];
+    }
+
+    /**
+     * @param int $seat
+     * @return int
+     */
+    public function getPlayerChips(int $seat): int
+    {
+        return $this->getSeat($seat)->getChips();
+    }
+
+    /**
+     * @param int $seat
+     * @param int $card
+     * @return Card
+     */
+    public function getPlayerCard(int $seat, int $card): Card
+    {
+        return $this->getSeat($seat)->getCard($card);
+    }
+
+    /**
+     * @return array
+     */
+    public function getSeats(): array
+    {
+        return $this->seats;
     }
 
     /**
@@ -57,15 +143,15 @@ class Table
      */
     public function getPlayers(): array
     {
-        return $this->players;
+        return array_filter($this->seats);
     }
 
     /**
-     * @param array $players
+     * @return int
      */
-    public function setPlayers(array $players): void
+    public function countPlayers(): int
     {
-        $this->players = $players;
+        return count($this->getPlayers());
     }
 
     /**
@@ -73,33 +159,29 @@ class Table
      */
     public function removePlayer(int $seat): void
     {
-        $this->players[$seat] = null;
+        $this->seats[$seat] = null;
         $this->isFull = false;
+        $this->setHasEnough();
     }
 
     /**
      * @param Player $player
-     * @param int $seat
+     * @param int|null $seatChoice
      */
-    public function addPlayer(Player $player, int $seat = 6): void
+    public function addPlayer(Player $player, int $seatChoice = null): void
     {
         if ($this->isFull) return;
 
-        if ($seat > 5){
+        if ($seatChoice === null){
             $empty = [];
-            foreach ($this->players as $key => $seat_){
-                if (!$seat_) {
-                    $empty[] = $key;
-                }
-            }
-
-            $this->players[$empty[array_rand($empty)]] = $player;
+            foreach ($this->seats as $key => $seat) if (!$seat) $empty[] = $key;
+            $this->seats[$empty[array_rand($empty)]] = $player;
         } else {
-            $this->players[$seat] = $player;
+            $this->seats[$seatChoice] = $player;
         }
 
-        $this->isFull = !in_array(null, $this->players);
-
+        $this->isFull = !in_array(null, $this->seats);
+        $this->setHasEnough();
     }
 
     /**
@@ -110,4 +192,136 @@ class Table
         return $this->isFull;
     }
 
+    /**
+     * @return array
+     */
+    public function getSize(): array
+    {
+        return $this->size;
+    }
+
+    /**
+     * @return int
+     */
+    public function getChipsSize(): int
+    {
+        return $this->size['STD'];
+    }
+
+    /**
+     * @return int
+     */
+    public function getSmallBlind(): int
+    {
+        return $this->getBigBlind() / 2;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getBigBlind()
+    {
+        return $this->size['MIN'];
+    }
+
+    /**
+     * @return int
+     */
+    public function getChips(): int
+    {
+        return $this->chips;
+    }
+
+    /**
+     * @param int $amount
+     */
+    public function addChips(int $amount): void
+    {
+        $this->chips += $amount;
+    }
+
+    /**
+     * @return array
+     */
+    public function getCards(): array
+    {
+        return $this->cards;
+    }
+
+    /**
+     * @param int $card
+     * @return Card
+     */
+    public function getCard(int $card): Card
+    {
+        return $this->cards[$card];
+    }
+
+    /**
+     *
+     */
+    public function setFlop()
+    {
+        $this->deck->burn();
+        $this->cards = $this->deck->takeFlop();
+    }
+
+    /**
+     *
+     */
+    public function setRiverTurn()
+    {
+        $this->deck->burn();
+        $this->cards[] = $this->deck->takeTop();
+    }
+
+    /**
+     * @return Deck
+     */
+    public function getDeck(): Deck
+    {
+        return $this->deck;
+    }
+
+    /**
+     * @param Deck $deck
+     */
+    public function setDeck(Deck $deck): void
+    {
+        $this->deck = $deck;
+    }
+
+
+    /**
+     *
+     */
+    private function setHasEnough(): void
+    {
+        $this->hasEnough = 1 < count(array_keys($this->seats, !null));
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasEnough(): bool
+    {
+        return $this->hasEnough;
+    }
+
+    /**
+     *
+     */
+    public function DealCards(): void
+    {
+        for ($i = 2; $i; $i--){
+            foreach ($this->seats as $key => $player) {
+                if ($player instanceof Player) {
+                    $player->addCard($this->deck->takeTop());
+                    $this->seats[$key] = $player;
+                } else {
+                    $this->seats[$key] = null;
+                }
+            }
+        }
+    }
 }
