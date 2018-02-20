@@ -2,120 +2,67 @@
 /**
  * Created by PhpStorm.
  * User: Vince
- * Date: 18/02/2018
- * Time: 20:21
+ * Date: 19/02/2018
+ * Time: 15:11
  */
 
 namespace App\Tests\Entity;
 
 
+use App\Entity\Card;
+use App\Entity\Deck;
 use App\Entity\Hand;
 use App\Entity\Player;
-use App\Entity\Table;
 use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 
 class HandTest extends TestCase
 {
-
-    /**
-     * @var Table
-     */
-    private $table;
-
     /**
      * @var Hand
      */
     private $hand;
+    
+    public function setUp()
+    {
+        $this->hand = new Hand(0, new Player("Nigel", 50));
+    }
 
     /**
      *
      */
-    public function setUp()
+    public function testThatPlayerCanReceiveTwoCards()
     {
-        $this->table = new Table();
+        $cards = [new Card(1, 1), new Card(1, 2)];
+        $this->hand->setCards($cards);
 
-        $names = ["Daan","Vrin","Rolf","John","Fizz","Cass","Anda","Tour","Ding","Dong"];
-        foreach ($names as $key => $name) {
-            $player = new Player($name, $this->table->getChipsSize());
-            $this->table->addPlayer($player, $key);
-        }
-        
-        $this->hand = new Hand($this->table);
+        $this->assertContainsOnlyInstancesOf(Card::class, $this->hand->getCards());
     }
 
-    public function testThatTableGivesTurnToNextPlayer()
+
+
+    /**
+     *
+     */
+    public function testThatHandGetsTwoRandomCards()
     {
-        $this->assertEquals(0, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(1, $this->hand->getTurn());
+        $deck = new Deck();
+
+        $cards = [$deck->takeTop(), $deck->takeTop()];
+
+        $this->hand->setCards($cards);
+
+        $this->assertNotEquals(new Card(3, 12), $this->hand->getCard(0));
+        $this->assertNotEquals($this->hand->getCard(0), $this->hand->getCard(1));
     }
 
-    public function testThatTableCanSkipASeatForNextTurn()
+    public function testThatHandGetsDealtTwoCards()
     {
-        $this->assertEquals(0, $this->hand->getTurn());
-        $this->table->removePlayer(1);
-        $this->hand->nextTurn();
-        $this->assertEquals(2, $this->hand->getTurn());
-    }
+        $deck = new Deck(false);
 
-    public function testThatTurnWillLoopOverToFirstSeat()
-    {
-        $this->assertEquals(0, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(1, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(2, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(3, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(4, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(5, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(6, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(7, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(8, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(9, $this->hand->getTurn());
-        $this->hand->nextTurn();
-        $this->assertEquals(0, $this->hand->getTurn());
-    }
+        $this->hand->addCard($deck->takeTop());
+        $this->hand->addCard($deck->takeTop());
 
-    public function testThatSmallAndBigBlindAreInTheTable()
-    {
-        $this->hand->takeSmallBigBlind();
-        $this->assertEquals(3, $this->table->getChips());
-        $this->assertEquals(49, $this->table->getPlayerChips(1));
-        $this->assertEquals(48, $this->table->getPlayerChips(2));
-        $this->assertEquals(3, $this->hand->getTurn());
+        $this->assertEquals(new Card(3, 12), $this->hand->getCard(0));
+        $this->assertEquals(new Card(3, 11), $this->hand->getCard(1));
     }
-
-    public function testThatPlayerCanCall()
-    {
-        $this->hand->takeSmallBigBlind();
-        $this->hand->playerCalls();
-        $this->assertEquals(48, $this->table->getPlayerChips(3));
-        $this->assertEquals(4, $this->hand->getTurn());
-    }
-
-    public function testThatPlayerCanRaise()
-    {
-        $this->hand->takeSmallBigBlind();
-        $this->hand->playerRaises(5);
-        $this->assertEquals(45, $this->table->getPlayerChips(3));
-        $this->assertEquals(4, $this->hand->getTurn());
-        $this->hand->playerCalls();
-        $this->assertEquals(45, $this->table->getPlayerChips(4));
-        $this->assertEquals(5, $this->hand->getTurn());
-    }
-
-    public function testThatPlayerCanFold()
-    {
-        $this->hand->takeSmallBigBlind();
-        $this->hand->playerFolds();
-        $this->assertEquals(Hand::FOLDED, $this->hand->getPlayerActionStatus(3));
-    }
-
 }

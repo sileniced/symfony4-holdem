@@ -34,7 +34,7 @@ class Card
     }
 
     /**
-     * @return mixed
+     * @return int
      */
     public function getSuit(): int
     {
@@ -42,7 +42,7 @@ class Card
     }
 
     /**
-     * @return mixed
+     * @return int
      */
     public function getRank(): int
     {

@@ -15,10 +15,13 @@ namespace App\Entity;
  */
 class Deck
 {
+    const FLOP = 3;
+    const FIVE = 5;
+
     /**
-     * @var
+     * @var array of Cards
      */
-    private $deck = [];
+    private $cards = [];
 
     /**
      * Deck constructor.
@@ -37,9 +40,14 @@ class Deck
     {
         for ($i = 0; $i < 4; $i++){
             for ($ii = 0; $ii < 13; $ii++){
-                $this->deck[] = new Card($i, $ii);
+                $this->cards[] = new Card($i, $ii);
             }
         }
+    }
+
+    public function setCards(array $cards): void
+    {
+        $this->cards = $cards;
     }
 
     /**
@@ -47,15 +55,15 @@ class Deck
      */
     public function shuffle(): void
     {
-        \shuffle($this->deck);
+        \shuffle($this->cards);
     }
 
     /**
      * @return mixed
      */
-    public function getDeck(): array
+    public function getCards(): array
     {
-        return $this->deck;
+        return $this->cards;
     }
 
     /**
@@ -63,7 +71,7 @@ class Deck
      */
     public function getAmount(): int
     {
-        return count($this->deck) - 1;
+        return count($this->cards) - 1;
     }
 
     /**
@@ -71,7 +79,7 @@ class Deck
      */
     public function getTop(): Card
     {
-        return $this->deck[$this->getAmount()];
+        return $this->cards[$this->getAmount()];
     }
 
     /**
@@ -79,25 +87,19 @@ class Deck
      */
     public function takeTop(): Card
     {
-        return array_pop($this->deck);
+        return array_pop($this->cards);
     }
 
-    public function takeFlop(): array
+    public function takeCards(int $amount): array
     {
-        return [$this->takeTop(), $this->takeTop(), $this->takeTop()];
-    }
-
-    /**
-     *
-     */
-    public function burn(): void
-    {
-        unset($this->deck[$this->getAmount()]);
+        $cards = [];
+        for ($i = 0; $i < $amount; $i++) $cards[] = $this->takeTop();
+        return $cards;
     }
 
     public function getCard(int $position): Card
     {
-        return $this->deck[$position];
+        return $this->cards[$position];
     }
 
 }

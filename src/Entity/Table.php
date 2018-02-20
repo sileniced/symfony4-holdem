@@ -58,21 +58,6 @@ class Table
     private $seats = [];
 
     /**
-     * @var integer
-     */
-    private $chips = 0;
-
-    /**
-     * @var array
-     */
-    private $cards;
-
-    /**
-     * @var Deck
-     */
-    private $deck;
-
-    /**
      * @var bool
      */
     private $isFull = false;
@@ -81,6 +66,11 @@ class Table
      * @var bool
      */
     private $hasEnough = false;
+
+    /**
+     * @var int
+     */
+    private $button = 0;
 
     /**
      * Table constructor.
@@ -104,25 +94,6 @@ class Table
     }
 
     /**
-     * @param int $seat
-     * @return int
-     */
-    public function getPlayerChips(int $seat): int
-    {
-        return $this->getSeat($seat)->getChips();
-    }
-
-    /**
-     * @param int $seat
-     * @param int $card
-     * @return Card
-     */
-    public function getPlayerCard(int $seat, int $card): Card
-    {
-        return $this->getSeat($seat)->getCard($card);
-    }
-
-    /**
      * @return array
      */
     public function getSeats(): array
@@ -136,6 +107,30 @@ class Table
     public function getPlayers(): array
     {
         return array_filter($this->seats);
+    }
+
+    /**
+     * @return int
+     */
+    public function getButton(): int
+    {
+        return $this->button;
+    }
+
+    private function isPlayer(int $seat): bool
+    {
+        return $this->getSeat($seat) instanceof Player;
+    }
+
+    /**
+     *
+     */
+    public function nextButton(): void
+    {
+        while (true) {
+            if (++$this->button <= Table::TABLE_SEATS) $this->button = 0;
+            if ($this->isPlayer($this->button)) break;
+        }
     }
 
     /**
@@ -156,6 +151,13 @@ class Table
         $this->setHasEnough();
     }
 
+    private function getEmptySeats(): array
+    {
+        $empty = [];
+        foreach ($this->seats as $key => $seat) if (!$seat) $empty[] = $key;
+        return $empty;
+    }
+
     /**
      * @param Player $player
      * @param int|null $seatChoice
@@ -164,9 +166,8 @@ class Table
     {
         if ($this->isFull) return;
 
-        if ($seatChoice === null){
-            $empty = [];
-            foreach ($this->seats as $key => $seat) if (!$seat) $empty[] = $key;
+        if ($seatChoice === null || $this->seats[$seatChoice] instanceof Player){
+            $empty = $this->getEmptySeats();
             $this->seats[$empty[array_rand($empty)]] = $player;
         } else {
             $this->seats[$seatChoice] = $player;
@@ -217,76 +218,6 @@ class Table
     }
 
     /**
-     * @return int
-     */
-    public function getChips(): int
-    {
-        return $this->chips;
-    }
-
-    /**
-     * @param int $amount
-     * @return int
-     */
-    public function addChips(int $amount): int
-    {
-        $this->chips += $amount;
-        return $amount;
-    }
-
-    /**
-     * @return array
-     */
-    public function getCards(): array
-    {
-        return $this->cards;
-    }
-
-    /**
-     * @param int $card
-     * @return Card
-     */
-    public function getCard(int $card): Card
-    {
-        return $this->cards[$card];
-    }
-
-    /**
-     *
-     */
-    public function setFlop()
-    {
-        $this->deck->burn();
-        $this->cards = $this->deck->takeFlop();
-    }
-
-    /**
-     *
-     */
-    public function setRiverTurn()
-    {
-        $this->deck->burn();
-        $this->cards[] = $this->deck->takeTop();
-    }
-
-    /**
-     * @return Deck
-     */
-    public function getDeck(): Deck
-    {
-        return $this->deck;
-    }
-
-    /**
-     * @param Deck $deck
-     */
-    public function setDeck(Deck $deck): void
-    {
-        $this->deck = $deck;
-    }
-
-
-    /**
      *
      */
     private function setHasEnough(): void
@@ -300,22 +231,5 @@ class Table
     public function hasEnough(): bool
     {
         return $this->hasEnough;
-    }
-
-    /**
-     *
-     */
-    public function DealCards(): void
-    {
-        for ($i = 2; $i; $i--){
-            foreach ($this->seats as $key => $player) {
-                if ($player instanceof Player) {
-                    $player->addCard($this->deck->takeTop());
-                    $this->seats[$key] = $player;
-                } else {
-                    $this->seats[$key] = null;
-                }
-            }
-        }
     }
 }

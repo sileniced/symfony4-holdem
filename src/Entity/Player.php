@@ -21,11 +21,6 @@ class Player
     private $name;
 
     /**
-     * @var array
-     */
-    private $cards;
-
-    /**
      * @var int
      */
     private $chips;
@@ -55,32 +50,6 @@ class Player
     public function setName($name): void
     {
         $this->name = $name;
-    }
-
-    public function getCard(int $card): Card
-    {
-        return $this->cards[$card];
-    }
-
-    public function addCard(Card $card): void
-    {
-        $this->cards[] = $card;
-    }
-
-    /**
-     * @return array
-     */
-    public function getCards(): array
-    {
-        return $this->cards;
-    }
-
-    /**
-     * @param array $cards
-     */
-    public function setCards(array $cards): void
-    {
-        $this->cards = $cards;
     }
 
     /**
