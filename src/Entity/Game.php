@@ -426,6 +426,7 @@ class Game
         return $this->state;
     }
 
+
     /**
      * @return int
      */
