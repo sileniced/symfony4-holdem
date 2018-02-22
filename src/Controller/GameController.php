@@ -10,6 +10,7 @@ namespace App\Controller;
 
 
 use App\Entity\Game;
+use App\Entity\Hand;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 class GameController extends Controller
@@ -24,32 +25,58 @@ class GameController extends Controller
         $this->game = $game;
     }
 
-    public function nextAction()
+    public function startAction()
     {
-        $this->game->resetChips();
+        $this->game->takeSmallBigBlind();
+        $this->game->dealCards();
+        $this->game->setState(Game::PRE_FLOP);
+        $this->game->nextPoint(3);
+    }
+
+    private function nextAction(): void
+    {
+        $this->game->resetHandsStatus();
         switch ($this->game->getState()) {
-            case Game::PRE_HAND: $this->preHandAction(); return;
-            case Game::PRE_FLOP: $this->preFlopAction(); return;
+            case Game::PRE_FLOP: $this->flopAction(); return;
+            case Game::FLOP: $this->riverAction(); return;
+            case Game::RIVER: $this->turnAction(); return;
+            case Game::TURN: $this->showAction(); return;
             default: return;
         }
     }
 
-    public function endAction()
+    private function endAction(): void
     {
-
+        $this->game->nextPoint();
+        $this->game->potTransfers();
+        $this->game->setState(Game::ENDED);
     }
 
-    private function preHandAction(): void
+    private function flopAction(): void
     {
-        $this->game->takeSmallBigBlind();
-        $this->game->dealCards();
-        $this->game->nextPoint(3);
-        $this->game->setState(Game::PRE_FLOP);
+        $this->game->setFlop();
+        $this->game->setState(Game::FLOP);
+        $this->game->nextPoint();
     }
 
-    private function preFlopAction(): void
+    private function riverAction(): void
     {
+        $this->game->setRiverTurn();
+        $this->game->setState(Game::RIVER);
+        $this->game->nextPoint();
+    }
 
+    private function turnAction(): void
+    {
+        $this->game->setRiverTurn();
+        $this->game->setState(Game::TURN);
+        $this->game->nextPoint();
+    }
+
+    private function showAction(): Hand
+    {
+        $this->game->setState(Game::SHOWDOWN);
+        return $this->game->assertWinner();
     }
 
     /**
@@ -57,10 +84,9 @@ class GameController extends Controller
      */
     public function CallAction(): void
     {
-        $betSize = (int) $this->game->getBetSize();
-        $this->game->playerTransfers($betSize);
+        $this->game->playerTransfers($this->game->getBetSize());
         $this->game->updateHandStatus(Game::CALLED);
-        $this->game->nextPoint();
+        if ($this->game->nextPoint()) $this->nextAction();
     }
 
     /**
@@ -68,7 +94,7 @@ class GameController extends Controller
      */
     public function RaiseAction(int $amount): void
     {
-        if ($amount < $this->game->getBetSize()) return;
+        if ($amount <= $this->game->getBetSize()) return;
         $this->game->setBetSize($this->game->playerTransfers($amount));
         $this->game->updateHandStatus(Game::RAISED);
         $this->game->nextPoint();
@@ -80,6 +106,7 @@ class GameController extends Controller
     public function FoldAction(): void
     {
         $this->game->updateHandStatus(Game::FOLDED);
-        $this->game->nextPoint();
+        if ($this->game->isFolding()) $this->endAction();
+        elseif ($this->game->nextPoint()) $this->nextAction();
     }
 }

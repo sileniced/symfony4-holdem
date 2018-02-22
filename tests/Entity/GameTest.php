@@ -138,7 +138,7 @@ class GameTest extends TestCase
     public function testThatSmallAndBigBlindAreInTheTable()
     {
         $this->game->takeSmallBigBlind();
-        $this->assertEquals(3, $this->game->getChips(), "dealer doesn't have the right amount of chips");
+        $this->assertEquals(3, $this->game->getPot(), "dealer doesn't have the right amount of chips");
         $this->assertEquals(49, $this->game->getPlayerChips(1), "player 1 didn't pay Small Blind");
         $this->assertEquals(48, $this->game->getPlayerChips(2), "player 2 didn't pay Big Blind");
         $this->assertEquals(0, $this->game->getPoint(), "Point didn't return to button");

@@ -16,10 +16,10 @@ class CardTest extends TestCase
 {
     public function testThatCardIsParsed()
     {
-        $card = new Card(0,0);
+        $card = new Card(Card::HEARTS,0);
         $this->assertEquals("2 of Hearts", $card->getCardName());
 
-        $card = new Card(2,12);
+        $card = new Card(Card::SPADES,Card::ACE);
         $this->assertEquals("Ace of Spades", $card->getCardName());
     }
 }

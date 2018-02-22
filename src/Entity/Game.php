@@ -7,6 +7,7 @@
  */
 
 namespace App\Entity;
+use App\Service\Judge;
 
 
 /**
@@ -23,6 +24,7 @@ class Game
     const FOLDED = "folded";
     const CHECKED = "checked";
     const BET = "bet";
+    const WON = "won";
 
     const POINT = "point";
     const BUTTON = "button";
@@ -33,6 +35,7 @@ class Game
     const RIVER = "river";
     const TURN = "turn";
     const SHOWDOWN = "showdown";
+    const ENDED = "ended";
 
     /**
      * @var Table
@@ -50,6 +53,11 @@ class Game
     private $betSize;
 
     /**
+     * @var int
+     */
+    private $folded;
+
+    /**
      * @var array of Hands
      */
     private $hands = [];
@@ -57,12 +65,12 @@ class Game
     /**
      * @var string
      */
-    private $state = Game::PRE_HAND;
+    private $state = self::PRE_HAND;
 
     /**
      * @var integer
      */
-    private $chips = 0;
+    private $pot = 0;
 
     /**
      * @var array
@@ -73,6 +81,11 @@ class Game
      * @var Deck
      */
     private $deck;
+
+    /**
+     * @var Hand
+     */
+    private $winner;
 
     /**
      * Game constructor.
@@ -86,6 +99,8 @@ class Game
         foreach ($this->table->getPlayers() as $key => $player) {
             $this->hands[] = new Hand($key, $player);
         }
+
+        $this->folded = $table->countPlayers() - 1;
 
         $this->deck = new Deck($shuffle);
     }
@@ -104,6 +119,14 @@ class Game
     public function setDeck(Deck $deck): void
     {
         $this->deck = $deck;
+    }
+
+    /**
+     * @return Table
+     */
+    public function getTable(): Table
+    {
+        return $this->table;
     }
 
     /**
@@ -134,21 +157,7 @@ class Game
             $this->nextPoint();
         }
         $this->removeUnusedCards();
-        $this->point = $this->table->getButton();
-    }
-
-    /**
-     * @param int $hand
-     * @return Hand
-     */
-    public function getHand(int $hand): Hand
-    {
-        return $this->hands[$hand];
-    }
-
-    public function getHands(): array
-    {
-        return $this->hands;
+        $this->resetPoint();
     }
 
     /**
@@ -180,6 +189,20 @@ class Game
     }
 
     /**
+     * @param int $hand
+     * @return Hand
+     */
+    public function getHand(int $hand): Hand
+    {
+        return $this->hands[$hand];
+    }
+
+    public function getHands(): array
+    {
+        return $this->hands;
+    }
+
+    /**
      * @return int
      */
     public function countHands(): int
@@ -188,20 +211,30 @@ class Game
     }
 
     /**
-     * @param string $action
+     * @param string $status
      */
-    public function updateHandStatus(string $action): void
+    public function updateHandStatus(string $status): void
     {
-        $this->getHand($this->point)->setStatus($action);
+        $this->getHand($this->point)->setStatus($status);
     }
 
     /**
-     * @param int $playerHand
+     * @param int $hand
      * @return null|string
      */
-    public function getHandStatus(int $playerHand): ?string
+    public function getHandStatus(int $hand): ?string
     {
-        return $this->getHand($playerHand)->getStatus();
+        return $this->getHand($hand)->getStatus();
+    }
+
+    public function getHandChips(int $hand): ?int
+    {
+        return $this->getHand($hand)->getChips();
+    }
+
+    public function isFolding(): bool
+    {
+        return !--$this->folded;
     }
 
     /**
@@ -210,7 +243,16 @@ class Game
      */
     public function hasFolded(int $playerHand): bool
     {
-        return $this->getHandStatus($playerHand) == Game::FOLDED;
+        return $this->getHandStatus($playerHand) == self::FOLDED;
+    }
+
+    public function isBlind(): int
+    {
+        switch ($this->getHandStatus($this->point)) {
+            case self::SMALL_BLIND: return $this->table->getSmallBlind();
+            case self::BIG_BLIND: return $this->table->getBigBlind();
+            default: return 0;
+        }
     }
 
     /**
@@ -221,15 +263,28 @@ class Game
         return $this->point;
     }
 
+    public function hasPhaseEnded(): bool
+    {
+        return $this->getHandChips($this->point) == $this->betSize &&
+            $this->getHandStatus($this->point) != self::BIG_BLIND;
+    }
+
     /**
      * @param int $amount
+     * @return bool
      */
-    public function nextPoint(int $amount = 1): void
+    public function nextPoint(int $amount = 1): bool
     {
         while ($amount > 0) {
             if (++$this->point == $this->countHands()) $this->point = 0;
             if (!$this->hasFolded($this->point)) $amount--;
         }
+        return $this->hasPhaseEnded();
+    }
+
+    public function resetPoint(): void
+    {
+        $this->point = $this->table->getButton();
     }
 
     /**
@@ -239,16 +294,17 @@ class Game
      */
     public function playerTransfers(int $amount): int
     {
-        return $this->addChips($this->getPlayer($this->point)->betChips($amount));
+        return $this->addToPot($this->getPlayer($this->point)->betChips($amount));
     }
 
     /**
      *
      */
-    public function resetChips(): void
+    public function resetHandsStatus(): void
     {
         /** @var Hand $hand */
-        foreach ($this->hands as $hand) $hand->resetChips();
+        foreach ($this->hands as $hand) $hand->resetHandStatus();
+        $this->betSize = 0;
     }
 
     /**
@@ -257,7 +313,7 @@ class Game
     private function transferSmallBlind(): void
     {
         $this->playerTransfers($this->table->getSmallBlind());
-        $this->updateHandStatus(Game::SMALL_BLIND);
+        $this->updateHandStatus(self::SMALL_BLIND);
     }
 
     /**
@@ -266,7 +322,7 @@ class Game
     private function transferBigBlind(): void
     {
         $this->betSize = $this->playerTransfers($this->table->getBigBlind());
-        $this->updateHandStatus(Game::BIG_BLIND);
+        $this->updateHandStatus(self::BIG_BLIND);
     }
 
     /**
@@ -284,15 +340,16 @@ class Game
     /**
      *
      */
-    public function setFlop()
+    public function setFlop(): void
     {
         $this->cards = (array) $this->deck->takeCards(Deck::FLOP);
+        $this->resetPoint();
     }
 
     /**
      *
      */
-    public function setRiverTurn()
+    public function setRiverTurn(): void
     {
         $this->cards[] = $this->deck->takeTop();
     }
@@ -300,20 +357,27 @@ class Game
     /**
      * @return int
      */
-    public function getChips(): int
+    public function getPot(): int
     {
-        return $this->chips;
+        return $this->pot;
     }
 
     /**
      * @param int $amount
      * @return int
      */
-    public function addChips(int $amount): int
+    public function addToPot(int $amount): int
     {
-        $this->chips += $amount;
+        $this->pot += $amount;
         $this->getHand($this->point)->addChips($amount);
         return $amount;
+    }
+
+    public function potTransfers()
+    {
+        $this->updateHandStatus(self::WON);
+        $this->getPlayer($this->point)->winChips($this->pot);
+        $this->winner = $this->getHand($this->point);
     }
 
     /**
@@ -322,6 +386,11 @@ class Game
     public function getCards(): array
     {
         return $this->cards;
+    }
+
+    public function getPlayCards(Hand $hand): array
+    {
+        return array_merge($this->getCards(), $hand->getCards());
     }
 
     /**
@@ -362,7 +431,7 @@ class Game
      */
     public function getBetSize(): int
     {
-        return $this->betSize;
+        return $this->betSize - $this->isBlind();
     }
 
     /**
@@ -371,5 +440,15 @@ class Game
     public function setBetSize(int $betSize): void
     {
         $this->betSize = $betSize;
+    }
+
+    public function assertWinner(): Hand
+    {
+        /** @var Hand $hand */
+        foreach ($this->getHands() as $hand) {
+            $hands[] = new Judge($this->getPlayCards($hand));
+        }
+
+
     }
 }

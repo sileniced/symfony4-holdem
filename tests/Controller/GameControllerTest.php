@@ -40,7 +40,12 @@ class GameControllerTest extends TestCase
 
         $this->gameController = new GameController($game);
 
-        $this->gameController->nextAction();
+        $this->gameController->startAction();
+    }
+
+    public function thatThatGameStateIsPreFlop()
+    {
+        $this->assertEquals(Game::PRE_FLOP, $this->gameController->game->getState());
     }
 
     public function testThatPlayerCanCall()
@@ -64,5 +69,90 @@ class GameControllerTest extends TestCase
     {
         $this->gameController->FoldAction();
         $this->assertEquals(Game::FOLDED, $this->gameController->game->getHandStatus(3));
+    }
+
+    public function testThatSmallBigBlindPlayerCallsCorrectly()
+    {
+        $this->assertEquals(49, $this->gameController->game->getPlayerChips(1));
+        $this->gameController->CallAction();
+        $this->assertEquals(48, $this->gameController->game->getPlayerChips(3));
+        $this->assertEquals(4, $this->gameController->game->getPoint());
+        $this->gameController->CallAction();
+        $this->assertEquals(48, $this->gameController->game->getPlayerChips(4));
+        $this->assertEquals(0, $this->gameController->game->getPoint());
+        $this->gameController->CallAction();
+        $this->assertEquals(48, $this->gameController->game->getPlayerChips(0));
+        $this->assertEquals(1, $this->gameController->game->getPoint());
+        $this->gameController->CallAction();
+        $this->assertEquals(48, $this->gameController->game->getPlayerChips(1));
+        $this->assertEquals(2, $this->gameController->game->getPoint());
+        $this->gameController->CallAction();
+        $this->assertEquals(48, $this->gameController->game->getPlayerChips(2));
+    }
+
+    public function testThatSmallBigBlindStillCallsCorrectlyAfterRaises()
+    {
+        $this->assertEquals(49, $this->gameController->game->getPlayerChips(1));
+        $this->gameController->RaiseAction(5);
+        $this->assertEquals(45, $this->gameController->game->getPlayerChips(3));
+        $this->assertEquals(4, $this->gameController->game->getPoint());
+        $this->gameController->CallAction();
+        $this->assertEquals(45, $this->gameController->game->getPlayerChips(4));
+        $this->assertEquals(0, $this->gameController->game->getPoint());
+        $this->gameController->RaiseAction(10);
+        $this->assertEquals(40, $this->gameController->game->getPlayerChips(0));
+        $this->assertEquals(1, $this->gameController->game->getPoint());
+        $this->gameController->CallAction();
+        $this->assertEquals(40, $this->gameController->game->getPlayerChips(1));
+        $this->assertEquals(2, $this->gameController->game->getPoint());
+        $this->gameController->CallAction();
+        $this->assertEquals(40, $this->gameController->game->getPlayerChips(2));
+    }
+
+    public function testThatGameCanGoToTheNextPhase()
+    {
+        $this->gameController->CallAction();
+        $this->gameController->CallAction();
+        $this->gameController->CallAction();
+        $this->gameController->CallAction();
+        $this->gameController->CallAction();
+        $this->assertEquals(1, $this->gameController->game->getPoint());
+        $this->assertEquals(Game::FLOP, $this->gameController->game->getState());
+    }
+
+    public function testThatGameCanGoToTheNextPhaseAfterTheFirstPlayerRaises()
+    {
+        $this->gameController->RaiseAction(5);
+        $this->gameController->CallAction();
+        $this->gameController->CallAction();
+        $this->gameController->CallAction();
+        $this->gameController->CallAction();
+        $this->assertEquals(1, $this->gameController->game->getPoint());
+        $this->assertEquals(Game::FLOP, $this->gameController->game->getState());
+    }
+
+    public function testThatGameCanGoToTheNextPhaseAfterTheSecondPlayerRaises()
+    {
+        $this->gameController->CallAction();
+        $this->gameController->RaiseAction(5);
+        $this->gameController->CallAction();
+        $this->gameController->CallAction();
+        $this->gameController->CallAction();
+        $this->gameController->CallAction();
+        $this->assertEquals(1, $this->gameController->game->getPoint());
+        $this->assertEquals(Game::FLOP, $this->gameController->game->getState());
+    }
+
+    public function testThatEverybodyFoldingLeadsToEndGameAndGivePotToWinner()
+    {
+        $this->gameController->FoldAction();
+        $this->gameController->FoldAction();
+        $this->gameController->FoldAction();
+        $this->assertNotEquals(Game::ENDED, $this->gameController->game->getState());
+        $this->gameController->FoldAction();
+        $this->assertEquals(Game::ENDED, $this->gameController->game->getState());
+        $this->assertEquals(51, $this->gameController->game->getPlayerChips(2));
+        $this->assertEquals(Game::WON, $this->gameController->game->getHandStatus(2));
+
     }
 }

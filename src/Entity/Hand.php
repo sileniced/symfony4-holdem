@@ -116,9 +116,10 @@ class Hand
         $this->chips += $chips;
     }
 
-    public function resetChips(): void
+    public function resetHandStatus(): void
     {
         $this->chips = 0;
+        $this->status = null;
     }
 
     public function getCard(int $card): Card

@@ -11,6 +11,17 @@ namespace App\Entity;
 
 class Card
 {
+
+    const CLUBS = 0;
+    const SPADES = 1;
+    const DIAMONDS = 2;
+    const HEARTS = 3;
+
+    const ACE = 12;
+    const KING = 11;
+    const QUEEN = 10;
+    const JACK = 9;
+
     /**
      * @var integer
      */
@@ -66,10 +77,10 @@ class Card
 
         switch ($this->suit)
         {
-            case 0: $suit = "Hearts"; break;
-            case 1: $suit = "Diamonds"; break;
-            case 2: $suit = "Spades"; break;
-            case 3: $suit = "Clubs"; break;
+            case 0: $suit = "Clubs"; break;
+            case 1: $suit = "Spades"; break;
+            case 2: $suit = "Diamonds"; break;
+            case 3: $suit = "Hearts"; break;
         }
 
         return sprintf("%s of %s", $rank, $suit);
