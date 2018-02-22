@@ -7,7 +7,7 @@
  */
 
 namespace App\Entity;
-use App\Service\Judge;
+use App\Services\Judge;
 
 
 /**
