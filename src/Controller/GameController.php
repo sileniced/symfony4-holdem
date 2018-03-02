@@ -193,6 +193,12 @@ class GameController extends Controller
         $this->game->nextPoint();
     }
 
+
+    /**
+     *   TESTER ACTIONS
+     */
+
+
     /**
      * @return Response
      * @Route("/test", name="testCards")
@@ -218,5 +224,14 @@ class GameController extends Controller
         return $this->render('Game/Game.html.twig', [
             "game" => $this->game
         ]);
+    }
+
+    /**
+     * @return Response
+     * @Route("/test/react", name="testReact")
+     */
+    public function testReactAction(): Response
+    {
+        return $this->render('Game/ReactTest.html.twig');
     }
 }
