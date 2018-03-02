@@ -36,7 +36,7 @@ class Hand
     private $status;
 
     /**
-     * @var int
+     * @var float
      */
     private $chips = 0;
 
@@ -112,25 +112,25 @@ class Hand
     }
 
     /**
-     * @return int
+     * @return float
      */
-    public function getChips(): int
+    public function getChips(): float
     {
         return $this->chips;
     }
 
     /**
-     * @param int $chips
+     * @param float $chips
      */
-    public function setChips(int $chips): void
+    public function setChips(float $chips): void
     {
         $this->chips = $chips;
     }
 
     /**
-     * @param int $chips
+     * @param float $chips
      */
-    public function addChips(int $chips): void
+    public function addChips(float $chips): void
     {
         $this->chips += $chips;
 

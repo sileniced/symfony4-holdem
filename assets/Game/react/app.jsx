@@ -1,3 +1,5 @@
+'use strict';
+
 require('./app.scss');
 
 const React = require('react');

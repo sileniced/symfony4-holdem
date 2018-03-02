@@ -162,9 +162,9 @@ class Game
      * @param int $point
      * @return Player
      */
-    public function getPlayer(int $point = null): Player
+    public function getPlayer(int $point): Player
     {
-        return $this->table->getSeat($this->getHand($point === null ? $this->point : $point)->getSeat());
+        return $this->table->getSeat($this->getHand($point)->getSeat());
     }
 
     public function getPlayerName(int $point): string
@@ -177,9 +177,9 @@ class Game
      * @param int $point
      * @return int
      */
-    public function getPlayerChips(int $point = null): int
+    public function getPlayerChips(int $point): int
     {
-        return $this->getPlayer($point === null ? $this->point : $point)->getChips();
+        return $this->getPlayer($point)->getChips();
     }
 
     /**
@@ -187,9 +187,9 @@ class Game
      * @param int $card
      * @return Card
      */
-    public function getHandCard(int $point = null, int $card): Card
+    public function getHandCard(int $point, int $card): Card
     {
-        return $this->getHand($point === null ? $this->point : $point)->getCard($card);
+        return $this->getHand($point)->getCard($card);
     }
 
     /**
@@ -221,27 +221,27 @@ class Game
      * @param string $status
      * @param int|null $point
      */
-    public function updateHandStatus(string $status, int $point = null): void
+    public function updateHandStatus(string $status, int $point): void
     {
-        $this->getHand($point === null ? $this->point : $point)->setStatus($status, $this->status);
+        $this->getHand($point)->setStatus($status, $this->status);
     }
 
     /**
      * @param int $point
      * @return null|string
      */
-    public function getHandStatus(int $point = null): ?string
+    public function getHandStatus(int $point): ?string
     {
-        return $this->getHand($point === null ? $this->point : $point)->getStatus();
+        return $this->getHand($point)->getStatus();
     }
 
     /**
      * @param int $point
      * @return int|null
      */
-    public function getHandChips(int $point = null): ?int
+    public function getHandChips(int $point): ?int
     {
-        return $this->getHand($point === null ? $this->point : $point)->getChips();
+        return $this->getHand($point)->getChips();
     }
 
     public function getHandJudgement(int $point): array
@@ -266,15 +266,15 @@ class Game
         }
     }
 
-    public function getJudgements(): array
-    {
-        /** @var Hand $hand */
-        foreach ($this->getHands() as $hand) {
-            $judgements[] = $hand->getJudgement();
-        }
-
-        return $judgements ?? [];
-    }
+//    public function getJudgements(): array
+//    {
+//        /** @var Hand $hand */
+//        foreach ($this->getHands() as $hand) {
+//            $judgements[] = $hand->getJudgement();
+//        }
+//
+//        return $judgements ?? [];
+//    }
 
     /**
      * @return bool
@@ -288,18 +288,18 @@ class Game
      * @param int $point
      * @return bool
      */
-    public function hasFolded(int $point = null): bool
+    public function hasFolded(int $point): bool
     {
-        return $this->getHandStatus($point === null ? $this->point : $point) == self::FOLDED;
+        return $this->getHandStatus($point) == self::FOLDED;
     }
 
     /**
      * @param int $point
      * @return int
      */
-    public function isBlind(int $point = null): int
+    public function isBlind(int $point): int
     {
-        switch ($this->getHandStatus($point === null ? $this->point : $point)) {
+        switch ($this->getHandStatus($point)) {
             case self::SMALL_BLIND: return $this->table->getSmallBlind();
             case self::BIG_BLIND: return $this->table->getBigBlind();
             default: return 0;
@@ -348,10 +348,10 @@ class Game
 
     /**
      *
-     * @param int $amount
-     * @return int
+     * @param float $amount
+     * @return float
      */
-    public function playerTransfers(int $amount): int
+    public function playerTransfers(float $amount): float
     {
         return $this->addToPot($this->getPlayer($this->point)->betChips($amount));
     }
@@ -372,7 +372,7 @@ class Game
     public function transferSmallBlind(): void
     {
         $this->playerTransfers($this->table->getSmallBlind());
-        $this->updateHandStatus(self::SMALL_BLIND);
+        $this->updateHandStatus(self::SMALL_BLIND, $this->point);
     }
 
     /**
@@ -381,7 +381,7 @@ class Game
     public function transferBigBlind(): void
     {
         $this->call = $this->playerTransfers($this->table->getBigBlind());
-        $this->updateHandStatus(self::BIG_BLIND);
+        $this->updateHandStatus(self::BIG_BLIND, $this->point);
     }
 
     /**
@@ -421,17 +421,17 @@ class Game
 
     /**
      * @param int|null $point
-     * @param int|null $amount
+     * @param float $chips
      */
-    public function potTransfers(int $point = null, int $amount = null): void
+    public function potTransfers(int $point, float $chips = null): void
     {
-        $this->updateHandStatus(self::WON, $point === null ? $this->point : $point);
+        $this->updateHandStatus(self::WON, $point);
         if ($this->winner == []) $this->winner = [
             "iteration" => 0,
-            "hand" => $point === null ? $this->point : $point,
+            "hand" => $point,
             "score" => -1
         ];
-        $this->getPlayer($point)->winChips($amount ?: $this->pot);
+        $this->getPlayer($point)->winChips($chips ?: $this->pot);
     }
 
     /**
@@ -439,11 +439,11 @@ class Game
      */
     public function splitPotTransfers(array $points): void
     {
-        $split = $this->pot / count($points);
+        $chips = (float) $this->pot / count($points);
 
         /** @var int $point */
         foreach ($points as $point) {
-            $this->potTransfers($point, $split);
+            $this->potTransfers($point, $chips);
         }
     }
 
@@ -503,7 +503,7 @@ class Game
      */
     public function getCall(): int
     {
-        return $this->call - $this->isBlind();
+        return $this->call - $this->isBlind($this->point);
     }
 
     /**

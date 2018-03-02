@@ -74,13 +74,13 @@ class Deck
         return count($this->cards) - 1;
     }
 
-    /**
-     * @return Card
-     */
-    public function getTop(): Card
-    {
-        return $this->cards[$this->getAmount()];
-    }
+//    /**
+//     * @return Card
+//     */
+//    public function getTop(): Card
+//    {
+//        return $this->cards[$this->getAmount()];
+//    }
 
     /**
      * @return Card

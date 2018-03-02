@@ -13,9 +13,14 @@ use App\Entity\Game;
 use App\Entity\Player;
 use App\Entity\Table;
 use App\Services\Judge;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Serializer;
 
 /**
  * Class GameController
@@ -86,7 +91,7 @@ class GameController extends Controller
     private function endAction(): void
     {
         $this->game->nextPoint();
-        $this->game->potTransfers();
+        $this->game->potTransfers($this->game->getPoint());
         $this->game->setStatus(Game::ENDED);
     }
 
@@ -148,7 +153,7 @@ class GameController extends Controller
     public function CallAction(): void
     {
         $this->game->playerTransfers($this->game->getCall());
-        $this->game->updateHandStatus(Game::CALLED);
+        $this->game->updateHandStatus(Game::CALLED, $this->game->getPoint());
         if ($this->game->nextPoint()) $this->nextPhaseAction();
     }
 
@@ -159,7 +164,7 @@ class GameController extends Controller
     {
         if ($amount <= $this->game->getCall()) return;
         $this->game->setCall($this->game->playerTransfers($amount));
-        $this->game->updateHandStatus(Game::RAISED);
+        $this->game->updateHandStatus(Game::RAISED, $this->game->getPoint());
         $this->game->nextPoint();
     }
 
@@ -168,7 +173,7 @@ class GameController extends Controller
      */
     public function FoldAction(): void
     {
-        $this->game->updateHandStatus(Game::FOLDED);
+        $this->game->updateHandStatus(Game::FOLDED, $this->game->getPoint());
         if ($this->game->isFolding()) $this->endAction();
         elseif ($this->game->nextPoint()) $this->nextPhaseAction();
     }
@@ -178,7 +183,7 @@ class GameController extends Controller
      */
     public function CheckAction(): void
     {
-        $this->game->updateHandStatus(Game::CHECKED);
+        $this->game->updateHandStatus(Game::CHECKED, $this->game->getPoint());
         if ($this->game->nextPoint()) $this->nextPhaseAction();
     }
 
@@ -189,7 +194,7 @@ class GameController extends Controller
     {
         if ($amount <= $this->game->getCall()) return;
         $this->game->setCall($this->game->playerTransfers($amount));
-        $this->game->updateHandStatus(Game::BET);
+        $this->game->updateHandStatus(Game::BET, $this->game->getPoint());
         $this->game->nextPoint();
     }
 
@@ -205,6 +210,41 @@ class GameController extends Controller
      */
     public function letsTestAction(): Response
     {
+        $this->makeCards();
+
+        return $this->render('Game/Game.html.twig', [
+            "game" => $this->game
+        ]);
+    }
+
+    /**
+     * @return Response
+     * @Route("/test/react", name="testReact")
+     */
+    public function testReactRenderAction(): Response
+    {
+        return $this->render('Game/ReactTest.html.twig');
+    }
+
+    /**
+     * @return JsonResponse
+     * @Method("GET")
+     * @Route("/test/react/json", name="testReactCards")
+     */
+    public function testReactJSONAction(): Response
+    {
+        $this->makeCards();
+
+
+        $serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
+
+
+
+        return new Response($serializer->serialize($this->game, 'json'));
+    }
+
+    private function makeCards(): void
+    {
         $table = new Table();
         $names = ["Daan","Vrin","Rolf","John","Fizz","Cass","Anda","Tour","Ding","Dong"];
         foreach ($names as $key => $name) {
@@ -219,19 +259,7 @@ class GameController extends Controller
         $this->turnAction();
 
         $this->showAction();
-        dump($this->game);
-
-        return $this->render('Game/Game.html.twig', [
-            "game" => $this->game
-        ]);
     }
 
-    /**
-     * @return Response
-     * @Route("/test/react", name="testReact")
-     */
-    public function testReactAction(): Response
-    {
-        return $this->render('Game/ReactTest.html.twig');
-    }
+
 }
