@@ -10,8 +10,12 @@ namespace App\Controller;
 
 
 use App\Entity\Game;
-use App\Entity\Hand;
+use App\Entity\Player;
+use App\Entity\Table;
+use App\Services\Judge;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Class GameController
@@ -25,10 +29,9 @@ class GameController extends Controller
     public $game;
 
     /**
-     * GameController constructor.
      * @param Game $game
      */
-    public function __construct(Game $game)
+    public function addGame(Game $game)
     {
         $this->game = $game;
     }
@@ -38,8 +41,26 @@ class GameController extends Controller
      */
     public function startAction()
     {
-        $this->game->takeSmallBigBlind();
-        $this->game->dealCards();
+        $this->game->resetPoint();
+
+        $this->game->nextPoint();
+        $this->game->transferSmallBlind();
+        $this->game->nextPoint();
+        $this->game->transferBigBlind();
+
+        $this->game->resetPoint();
+
+        $this->game->nextPoint();
+
+        $twice = $this->game->countHands() * 2;
+        for ($i = 0; $i < $twice; $i++) {
+            $this->game->dealCard();
+            $this->game->nextPoint();
+        }
+        $this->game->removeUnusedCards();
+
+        $this->game->resetPoint();
+
         $this->game->setStatus(Game::PRE_FLOP);
         $this->game->nextPoint(3);
     }
@@ -47,7 +68,7 @@ class GameController extends Controller
     /**
      *
      */
-    private function nextAction(): void
+    private function nextPhaseAction(): void
     {
         $this->game->resetHandsStatus();
         switch ($this->game->getStatus()) {
@@ -77,6 +98,7 @@ class GameController extends Controller
         $this->game->setFlop();
         $this->game->setStatus(Game::FLOP);
         $this->game->resetPoint();
+        $this->game->nextPoint();
     }
 
     /**
@@ -87,6 +109,7 @@ class GameController extends Controller
         $this->game->setRiverTurn();
         $this->game->setStatus(Game::RIVER);
         $this->game->resetPoint();
+        $this->game->nextPoint();
     }
 
     /**
@@ -97,15 +120,16 @@ class GameController extends Controller
         $this->game->setRiverTurn();
         $this->game->setStatus(Game::TURN);
         $this->game->resetPoint();
+        $this->game->nextPoint();
     }
 
     /**
-     * @return Hand
+     *
      */
-    private function showAction(): Hand
+    private function showAction(): void
     {
         $this->game->setStatus(Game::SHOWDOWN);
-        return $this->game->assertWinner();
+        $this->game->assertWinner(new Judge());
     }
 
 
@@ -123,9 +147,9 @@ class GameController extends Controller
      */
     public function CallAction(): void
     {
-        $this->game->updateHandStatus(Game::CALLED);
         $this->game->playerTransfers($this->game->getCall());
-        if ($this->game->nextPoint()) $this->nextAction();
+        $this->game->updateHandStatus(Game::CALLED);
+        if ($this->game->nextPoint()) $this->nextPhaseAction();
     }
 
     /**
@@ -134,8 +158,8 @@ class GameController extends Controller
     public function RaiseAction(int $amount): void
     {
         if ($amount <= $this->game->getCall()) return;
-        $this->game->updateHandStatus(Game::RAISED);
         $this->game->setCall($this->game->playerTransfers($amount));
+        $this->game->updateHandStatus(Game::RAISED);
         $this->game->nextPoint();
     }
 
@@ -146,7 +170,7 @@ class GameController extends Controller
     {
         $this->game->updateHandStatus(Game::FOLDED);
         if ($this->game->isFolding()) $this->endAction();
-        elseif ($this->game->nextPoint()) $this->nextAction();
+        elseif ($this->game->nextPoint()) $this->nextPhaseAction();
     }
 
     /**
@@ -155,7 +179,7 @@ class GameController extends Controller
     public function CheckAction(): void
     {
         $this->game->updateHandStatus(Game::CHECKED);
-        if ($this->game->nextPoint()) $this->nextAction();
+        if ($this->game->nextPoint()) $this->nextPhaseAction();
     }
 
     /**
@@ -164,8 +188,35 @@ class GameController extends Controller
     public function BetAction(int $amount): void
     {
         if ($amount <= $this->game->getCall()) return;
-        $this->game->updateHandStatus(Game::BET);
         $this->game->setCall($this->game->playerTransfers($amount));
+        $this->game->updateHandStatus(Game::BET);
         $this->game->nextPoint();
+    }
+
+    /**
+     * @return Response
+     * @Route("/test", name="testCards")
+     */
+    public function letsTestAction(): Response
+    {
+        $table = new Table();
+        $names = ["Daan","Vrin","Rolf","John","Fizz","Cass","Anda","Tour","Ding","Dong"];
+        foreach ($names as $key => $name) {
+            $player = new Player($name, $table->getChipsSize());
+            $table->addPlayer($player, $key);
+        }
+
+        $this->addGame(new Game($table));
+        $this->startAction();
+        $this->flopAction();
+        $this->riverAction();
+        $this->turnAction();
+
+        $this->showAction();
+        dump($this->game);
+
+        return $this->render('Game/Game.html.twig', [
+            "game" => $this->game
+        ]);
     }
 }

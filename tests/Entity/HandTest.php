@@ -12,7 +12,6 @@ namespace App\Tests\Entity;
 use App\Entity\Card;
 use App\Entity\Deck;
 use App\Entity\Hand;
-use App\Entity\Player;
 use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 
 class HandTest extends TestCase
@@ -24,13 +23,13 @@ class HandTest extends TestCase
     
     public function setUp()
     {
-        $this->hand = new Hand(0, new Player("Nigel", 50));
+        $this->hand = new Hand(0);
     }
 
     /**
      *
      */
-    public function testThatPlayerCanReceiveTwoCards()
+    public function testThatHandCanReceiveTwoCards()
     {
         $cards = [new Card(1, 1), new Card(1, 2)];
         $this->hand->setCards($cards);

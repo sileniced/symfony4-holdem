@@ -38,7 +38,7 @@ class Hand
     /**
      * @var int
      */
-    private $chips;
+    private $chips = 0;
 
 
     /**
@@ -61,21 +61,18 @@ class Hand
         ]
     ];
 
-
     /**
-     * @var
+     * @var array
      */
     private $judgement;
 
     /**
      * Hand constructor.
      * @param int $seat
-     * @param Player $player
      */
-    public function __construct(int $seat, Player &$player)
+    public function __construct(int $seat)
     {
         $this->seat = $seat;
-        $this->player = $player;
     }
 
     /**
@@ -94,26 +91,10 @@ class Hand
         $this->seat = $seat;
     }
 
-//    /**
-//     * @return Player
-//     */
-//    public function getPlayer(): Player
-//    {
-//        return $this->player;
-//    }
-//
-//    /**
-//     * @param Player $player
-//     */
-//    public function setPlayer(Player $player): void
-//    {
-//        $this->player = $player;
-//    }
-
     /**
      * @return string
      */
-    public function getStatus(): string
+    public function getStatus(): ?string
     {
         return $this->status;
     }
@@ -135,7 +116,7 @@ class Hand
      */
     public function getChips(): int
     {
-        return $this->chips['last'];
+        return $this->chips;
     }
 
     /**
@@ -209,7 +190,7 @@ class Hand
     /**
      * @return mixed
      */
-    public function getJudgement(): Judgement
+    public function getJudgement(): array
     {
         return $this->judgement;
     }
@@ -217,10 +198,8 @@ class Hand
     /**
      * @param mixed $judgement
      */
-    public function setJudgement(Judgement $judgement): void
+    public function setJudgement(array $judgement): void
     {
         $this->judgement = $judgement;
     }
-
-
 }

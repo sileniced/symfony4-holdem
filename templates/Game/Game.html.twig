@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('build/Game/app.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('build/Game/app.js') }}"></script>
+{% endblock %}
+
+{% macro hand(key, hand, game) %}
+    Player {{ key }} "{{ game.playerName(key) }}"
+    <ul>
+        <li>Chips: {{ game.playerChips(key) }} </li>
+        <li>Status: {{ hand.status }}</li>
+    </ul>
+    {# @var card \App\Entity\Card #}
+    {% for card in hand.cards %}
+        <img src="{{ card.pngName }}" width="100" />
+    {% endfor %}
+{% endmacro %}
+
+{% block body %}
+    {% import _self as self %}
+
+    <div class="container-fluid">
+        <h1>Texas Hold'em</h1>
+        <div class="row">
+            {# @var hand \App\Entity\Hand #}
+            {% for key, hand in game.hands %}
+                <div class="col-md-2 player">
+                    {{ self.hand(key, hand, game) }}
+                </div>
+            {% endfor %}
+
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                TABLE:
+                <ul>
+                    <li>pot: {{ game.pot }}</li>
+                    <li>status: {{ game.status }}</li>
+                </ul>
+                {# @var card \App\Entity\Card #}
+                {% for card in game.cards %}
+                    <img src="{{ card.pngName }}" width="100" />
+                {% endfor %}
+            </div>
+            <div class="col-md-6">
+                WINNER: {{ game.handJudgementName(game.winner['hand'][0]) }} <br />
+                {% for winner in game.winner['hand'] %}
+                    {% set hand = game.hand(winner) %}
+                    <div class="col-md-6">
+                        {{ self.hand(winner, hand, game)}}
+                    </div>
+                {% endfor %}
+
+            </div>
+
+
+        </div>
+
+    </div>
+{% endblock %}

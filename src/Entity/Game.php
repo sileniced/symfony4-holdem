@@ -7,8 +7,8 @@
  */
 
 namespace App\Entity;
-use App\Services\Kicker;
-use App\Services\Judger;
+
+use App\Services\Judge;
 
 
 /**
@@ -39,7 +39,7 @@ class Game
     const CHECKED = "checked";
     const BET = "bet";
 
-    const WON = true;
+    const WON = "won";
     const SPLIT_POT = "split pot";
 
     /**
@@ -88,9 +88,9 @@ class Game
     private $deck;
 
     /**
-     * @var Hand
+     * @var array of Hands
      */
-    private $winner;
+    private $winner = [];
 
     /**
      * Game constructor.
@@ -101,11 +101,11 @@ class Game
     {
         $this->table = $table;
 
-        foreach ($this->table->getPlayers() as $key => &$player) {
-            $this->hands[] = new Hand($key, $player);
+        foreach ($this->table->getPlayers() as $key => $player) {
+            $this->hands[] = new Hand($key);
         }
 
-        $this->folds = $table->countPlayers() - 1;
+        $this->folds = $this->countHands() - 1;
 
         $this->deck = new Deck($shuffle);
     }
@@ -137,7 +137,7 @@ class Game
     /**
      *
      */
-    private function dealCard(): void
+    public function dealCard(): void
     {
         $this->getHand($this->point)->addCard($this->takeTopCard());
     }
@@ -145,60 +145,60 @@ class Game
     /**
      *
      */
-    private function removeUnusedCards()
+    public function removeUnusedCards()
     {
         $this->deck->setCards($this->deck->takeCards(Deck::FIVE));
     }
 
     /**
-     *
+     * @return array
      */
-    public function dealCards(): void
+    public function getWinner(): array
     {
-        $this->nextPoint();
-        $twice = $this->countHands() * 2;
-        for ($i = 0; $i < $twice; $i++) {
-            $this->dealCard();
-            $this->nextPoint();
-        }
-        $this->removeUnusedCards();
+        return $this->winner;
     }
 
     /**
-     * @param int $hand
+     * @param int $point
      * @return Player
      */
-    public function getPlayer(int $hand): Player
+    public function getPlayer(int $point = null): Player
     {
-        return $this->table->getSeat($this->getHand($hand)->getSeat());
+        return $this->table->getSeat($this->getHand($point === null ? $this->point : $point)->getSeat());
     }
 
+    public function getPlayerName(int $point): string
+    {
+        return $this->getPlayer($point)->getName();
+    }
+
+
     /**
-     * @param int $hand
+     * @param int $point
      * @return int
      */
-    public function getPlayerChips(int $hand): int
+    public function getPlayerChips(int $point = null): int
     {
-        return $this->getPlayer($hand)->getChips();
+        return $this->getPlayer($point === null ? $this->point : $point)->getChips();
     }
 
     /**
-     * @param int $hand
+     * @param int $point
      * @param int $card
      * @return Card
      */
-    public function getHandCard(int $hand, int $card): Card
+    public function getHandCard(int $point = null, int $card): Card
     {
-        return $this->getHand($hand)->getCard($card);
+        return $this->getHand($point === null ? $this->point : $point)->getCard($card);
     }
 
     /**
-     * @param int $hand
+     * @param int $point
      * @return Hand
      */
-    public function getHand(int $hand): Hand
+    public function getHand(int $point): Hand
     {
-        return $this->hands[$hand];
+        return $this->hands[$point];
     }
 
     /**
@@ -219,28 +219,61 @@ class Game
 
     /**
      * @param string $status
+     * @param int|null $point
      */
-    public function updateHandStatus(string $status): void
+    public function updateHandStatus(string $status, int $point = null): void
     {
-        $this->getHand($this->point)->setStatus($status, $this->status);
+        $this->getHand($point === null ? $this->point : $point)->setStatus($status, $this->status);
     }
 
     /**
-     * @param int $hand
+     * @param int $point
      * @return null|string
      */
-    public function getHandStatus(int $hand): ?string
+    public function getHandStatus(int $point = null): ?string
     {
-        return $this->getHand($hand)->getStatus();
+        return $this->getHand($point === null ? $this->point : $point)->getStatus();
     }
 
     /**
-     * @param int $hand
+     * @param int $point
      * @return int|null
      */
-    public function getHandChips(int $hand): ?int
+    public function getHandChips(int $point = null): ?int
     {
-        return $this->getHand($hand)->getChips();
+        return $this->getHand($point === null ? $this->point : $point)->getChips();
+    }
+
+    public function getHandJudgement(int $point): array
+    {
+        return $this->getHand($point)->getJudgement();
+    }
+
+
+    public function getHandJudgementName(int $point): string
+    {
+        switch($this->getHand($point)->getJudgement()[0]) {
+            case (1): return "pair";
+            case (2): return "two pair";
+            case (3): return "three of a kind";
+            case (4): return "straight";
+            case (5): return "flush";
+            case (6): return "full house";
+            case (7): return "four of a kind";
+            case (8): return "straight flush";
+            case (9): return "royal flush";
+            default: return "high card";
+        }
+    }
+
+    public function getJudgements(): array
+    {
+        /** @var Hand $hand */
+        foreach ($this->getHands() as $hand) {
+            $judgements[] = $hand->getJudgement();
+        }
+
+        return $judgements ?? [];
     }
 
     /**
@@ -252,20 +285,21 @@ class Game
     }
 
     /**
-     * @param int $playerHand
+     * @param int $point
      * @return bool
      */
-    public function hasFolded(int $playerHand): bool
+    public function hasFolded(int $point = null): bool
     {
-        return $this->getHandStatus($playerHand) == self::FOLDED;
+        return $this->getHandStatus($point === null ? $this->point : $point) == self::FOLDED;
     }
 
     /**
+     * @param int $point
      * @return int
      */
-    public function isBlind(): int
+    public function isBlind(int $point = null): int
     {
-        switch ($this->getHandStatus($this->point)) {
+        switch ($this->getHandStatus($point === null ? $this->point : $point)) {
             case self::SMALL_BLIND: return $this->table->getSmallBlind();
             case self::BIG_BLIND: return $this->table->getBigBlind();
             default: return 0;
@@ -310,7 +344,6 @@ class Game
     public function resetPoint(): void
     {
         $this->point = $this->table->getButton();
-        $this->nextPoint();
     }
 
     /**
@@ -336,7 +369,7 @@ class Game
     /**
      *
      */
-    private function transferSmallBlind(): void
+    public function transferSmallBlind(): void
     {
         $this->playerTransfers($this->table->getSmallBlind());
         $this->updateHandStatus(self::SMALL_BLIND);
@@ -345,22 +378,10 @@ class Game
     /**
      *
      */
-    private function transferBigBlind(): void
+    public function transferBigBlind(): void
     {
         $this->call = $this->playerTransfers($this->table->getBigBlind());
         $this->updateHandStatus(self::BIG_BLIND);
-    }
-
-    /**
-     *
-     */
-    public function takeSmallBigBlind(): void
-    {
-        $this->nextPoint();
-        $this->transferSmallBlind();
-        $this->nextPoint();
-        $this->transferBigBlind();
-        $this->point = $this->table->getButton();
     }
 
     /**
@@ -399,25 +420,30 @@ class Game
     }
 
     /**
-     *
+     * @param int|null $point
+     * @param int|null $amount
      */
-    public function potTransfers(): void
+    public function potTransfers(int $point = null, int $amount = null): void
     {
-        $this->updateHandStatus(self::WON);
-        $this->getPlayer($this->point)->winChips($this->pot);
-        $this->winner = $this->getHand($this->point);
+        $this->updateHandStatus(self::WON, $point === null ? $this->point : $point);
+        if ($this->winner == []) $this->winner = [
+            "iteration" => 0,
+            "hand" => $point === null ? $this->point : $point,
+            "score" => -1
+        ];
+        $this->getPlayer($point)->winChips($amount ?: $this->pot);
     }
 
     /**
-     * @param array $hands
+     * @param array $points
      */
-    public function splitPotTransfers(array $hands): void
+    public function splitPotTransfers(array $points): void
     {
-        $split = $this->pot / count($hands);
+        $split = $this->pot / count($points);
 
-        /** @var Hand $hand */
-        foreach ($hands as $hand) {
-            $this->table->getSeat($hand->getSeat())->winChips($split);
+        /** @var int $point */
+        foreach ($points as $point) {
+            $this->potTransfers($point, $split);
         }
     }
 
@@ -489,42 +515,19 @@ class Game
     }
 
     /**
-     * @return Hand|null
+     * @param Judge $judge
      */
-    public function assertWinner(): ?Hand
+    public function assertWinner(Judge $judge): void
     {
-        $judge = new Judger();
-        $winner = [
-            "hand" => [],
-            "score" => 0
-        ];
-            null;
         /** @var Hand $hand */
-        foreach ($this->getHands() as $key => &$hand) {
-
+        foreach ($this->getHands() as $key => $hand) {
             $hand->setJudgement($judge->judge($this->getPlayCards($hand)));
-            if ($hand->hasFolded()) continue;
-            $score = $hand->getJudgement()->getScore();
-
-            if ($score > $winner["score"]) newWinner($winner, $score, $hand);
-            elseif ($score == $winner["score"]) $winner["hand"][] = $hand;
-
+            if (!$hand->hasFolded()) $judgements[$key] = $hand->getJudgement();
         }
 
-        if (count($winner["hand"]) == 1) return $winner["hand"][0];
+        $this->winner = $judge->assertWinner($judgements ?? []);
+        if (count($this->winner['hand']) == 1) $this->potTransfers($this->winner['hand'][0]);
+        else $this->splitPotTransfers($this->winner['hand']);
 
-        $kicker = new Kicker($winner);
-        $winner = $kicker->kick();
-        if ($winner instanceof Hand) return $winner;
-
-        $this->splitPotTransfers($winner);
-        return null;
-
-
-        function newWinner(array &$winner, int $score, Hand $hand): void
-        {
-            $winner['score'] = $score;
-            $winner["hand"] = [$hand];
-        }
     }
 }

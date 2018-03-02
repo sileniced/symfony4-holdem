@@ -94,5 +94,13 @@ class Card
         return sprintf("%s_%s", $this->suit, $this->rank);
     }
 
+    /**
+     * @return string
+     */
+    public function getPngName(): string
+    {
+        return "cards/" . strtolower(str_replace(" ", "_", $this->getCardName())) . ".png";
+    }
+
 
 }

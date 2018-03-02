@@ -43,7 +43,7 @@ class GameTest extends TestCase
         }
         $this->game = new Game($this->table);
         $this->game->setDeck(new Deck(false));
-        $this->game->DealCards();
+        $this->dealCards();
     }
 
     public function testThatDeckEndsUpWithFiveCards()
@@ -69,7 +69,7 @@ class GameTest extends TestCase
         
         $this->game = new Game($this->table);
         $this->game->setDeck(new Deck(false));
-        $this->game->DealCards();
+        $this->DealCards();
 
         $this->assertEquals(new Card(3, 6), $this->game->getHandCard(0,0));
         $this->assertEquals(new Card(2, 12), $this->game->getHandCard(0,1));
@@ -137,12 +137,34 @@ class GameTest extends TestCase
 
     public function testThatSmallAndBigBlindAreInTheTable()
     {
-        $this->game->takeSmallBigBlind();
+        $this->takeSmallBigBlind();
         $this->assertEquals(3, $this->game->getPot(), "dealer doesn't have the right amount of chips");
         $this->assertEquals(49, $this->game->getPlayerChips(1), "player 1 didn't pay Small Blind");
         $this->assertEquals(48, $this->game->getPlayerChips(2), "player 2 didn't pay Big Blind");
         $this->assertEquals(0, $this->game->getPoint(), "Point didn't return to button");
     }
 
+    private function dealCards(): void
+    {
+        $this->game->nextPoint();
 
+        $twice = $this->game->countHands() * 2;
+        for ($i = 0; $i < $twice; $i++) {
+            $this->game->dealCard();
+            $this->game->nextPoint();
+        }
+        $this->game->removeUnusedCards();
+        $this->game->resetPoint();
+    }
+
+    private function takeSmallBigBlind(): void
+    {
+        $this->game->resetPoint();
+
+        $this->game->nextPoint();
+        $this->game->transferSmallBlind();
+        $this->game->nextPoint();
+        $this->game->transferBigBlind();
+        $this->game->resetPoint();
+    }
 }

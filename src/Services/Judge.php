@@ -10,9 +10,8 @@ namespace App\Services;
 
 
 use App\Entity\Card;
-use App\Entity\Judgement;
 
-class Judger
+class Judge
 {
     const HIGH_CARD = 0;
     const PAIR = 1;
@@ -54,9 +53,9 @@ class Judger
 
     /**
      * @param array $cards
-     * @return Judgement
+     * @return array
      */
-    public function judge(array $cards): Judgement
+    public function judge(array $cards): array
     {
 
         $this->cards = $cards;
@@ -71,6 +70,7 @@ class Judger
         $this->rankValues = array_count_values($this->ranks);
         $this->flush = max(array_count_values($this->suits)) >= 5;
         $this->uniques = count(array_unique($this->ranks));
+        unset($this->straightRank);
 
         switch (true) {
 
@@ -78,8 +78,9 @@ class Judger
              *
              * Judgement ( score: from 0 - Highcard to 9 - Royal Flush, kicker: described below )
              *
-             * @returns kicker:
-             *      extra data required if the max score is shared among Hands
+             * @returns array:
+             *      [0] => score of the hand
+             *      [1 - 6] => extra data required if the max score is shared among Hands
              *
              */
 
@@ -89,14 +90,14 @@ class Judger
              *
              * @case null
              */
-            case $this->isRoyalFlush():     return new Judgement(9, null);
+            case $this->isRoyalFlush():     return [9];
 
             /**
              * @return int, the highest rank in the flush
              *
              * @case 0 (Highest rank)
              */
-            case $this->isStraightFlush():  return new Judgement(8, [$this->straightRank]);
+            case $this->isStraightFlush():  return [8, $this->straightRank];
 
             /**
              * @return int, the rank of the Four of a kind
@@ -104,7 +105,7 @@ class Judger
              *
              * @case 0 (Highest rank)
              */
-            case $this->isFourOfAKind():    return new Judgement(7, [array_search(4, $this->rankValues)]);
+            case $this->isFourOfAKind():    return [7, array_search(4, $this->rankValues)];
 
             /**
              * @return array -- [
@@ -119,7 +120,7 @@ class Judger
              *
              * @case 1 (map through array)
              */
-            case $this->isFullHouse():      return new Judgement(6, $this->getFullHouseKicker());
+            case $this->isFullHouse():      return array_merge([6], $this->getFullHouseKicker());
 
             /**
              * full suit
@@ -127,7 +128,7 @@ class Judger
              *
              * @case 0 (highest rank)
              */
-            case $this->isFlush():          return new Judgement(5, [$this->getFlushKicker()]);
+            case $this->isFlush():          return array_merge([5], $this->getFlushKicker());
 
             /**
              * ranks consequent of each other
@@ -139,7 +140,7 @@ class Judger
              *
              * @case 1 (map through array)
              */
-            case $this->isStraight():       return new Judgement(4, [$this->straightRank]);
+            case $this->isStraight():       return [4, $this->straightRank];
 
             /**
              * @return array -- [
@@ -152,7 +153,7 @@ class Judger
              *
              * @case 1 (map through array)
             **/
-            case $this->isThreeOfAKind():   return new Judgement(3, $this->getThreeOfAKindKicker());
+            case $this->isThreeOfAKind():   return array_merge([3], $this->getThreeOfAKindKicker());
 
             /**
              * @return array -- [
@@ -165,7 +166,7 @@ class Judger
              *
              * @case 1 (map through array)
              */
-            case $this->isTwoPairs():       return new Judgement(2, $this->getTwoPairsKicker());
+            case $this->isTwoPairs():       return array_merge([2], $this->getTwoPairsKicker());
 
             /**
              * @return array -- [
@@ -179,10 +180,8 @@ class Judger
              *
              * @case 1 (map through array)
              */
-            case $this->isPair():           return new Judgement(1, $this->getPairKicker());
+            case $this->isPair():           return array_merge([1], $this->getPairKicker());
 
-            /** KICKER -> highest of the ranks */
-            /** KICKER -> second, third..... highest of the ranks */
             /**
              * @return array -- of the 5 highest cards in reverse sort [
              *      0 => highest card
@@ -196,7 +195,7 @@ class Judger
              *
              * @case 1 (map through array)
              */
-            default:                        return new Judgement(0, $this->getHighCardKicker());
+            default:                        return array_merge([0], $this->getHighCardKicker());
         }
     }
 
@@ -248,10 +247,13 @@ class Judger
      */
     private function isStraight(array $ranks = null): bool
     {
+        $max = 3;
         if (!$ranks) $ranks = $this->ranks;
+        else $max -= 7 - count($ranks);
+
         sort($ranks);
 
-        for ($i = 0; $i < 3; $i++) {
+        for ($i = 0; $i < $max; $i++) {
 
             $need = 5;
             $count = 1;
@@ -262,7 +264,7 @@ class Judger
             while ($count < $need) {
                 if ($ranks[$i] + $count == $ranks[$i + $count]) {
                     if (++$count >= $need) {
-                        $this->straightRank = $ranks[$i + $count - 1];
+                        $this->straightRank = $ranks[$i + --$count];
                         return true;
                     }
                     continue;
@@ -301,6 +303,52 @@ class Judger
 
 
 
+    /****************************************\
+     *           ASSERT FUNCTIONS           *
+    \****************************************/
+
+    /**
+     * @param array $judgements
+     *      two dimensional array
+     *      row => hand with scores and ranks
+     *      column => compare these
+     * @return array
+     */
+    public function assertWinner(array $judgements): array
+    {
+        $i = 0;
+        while(true){
+
+            $winner = [
+                "iteration" => $i,
+                "hand" => null,
+                "score" => -1
+            ];
+
+            foreach ($judgements as $hand => $judgement)
+            {
+
+                if ($judgement[$i] > $winner['score'])
+                {
+
+                    if ($winner["hand"] !== null) foreach ($winner["hand"] as $lost) unset($judgements[$lost]);
+
+                    $winner["hand"] = [$hand];
+                    $winner["score"] = $judgement[$i];
+                } elseif ($judgement[$i] == $winner['score'])
+                    $winner["hand"][] = $hand;
+                else unset($judgements[$hand]);
+            }
+
+            if (count($winner['hand']) == 1 ||
+                !isset($judgements[$winner['hand'][0]][++$i])
+            ) return $winner;
+
+        }
+
+        return [];
+
+    }
 
 
 
@@ -317,20 +365,25 @@ class Judger
      */
     private function getFullHouseKicker(): array
     {
-        return [array_search(3, $this->rankValues), array_search(2, $this->rankValues)];
+        return [max(array_keys($this->rankValues, 3)), max(array_keys($this->rankValues, 2))];
     }
 
     /**
-     * @return int, highest rank of the flush
+     * @return array, 5 highest ranks of the flush
      */
-    private function getFlushKicker(): int
+    private function getFlushKicker(): array
     {
-        $suit = $this->getFlushSuit();
-        $max = [];
-        foreach ($this->suits as $key => $suits)
-            if ($suits == $suit) $max[] = $this->ranks[$key];
+//        $suit = $this->getFlushSuit();
+//        $max = [];
+//        foreach ($this->suits as $key => $suits)
+//            if ($suits == $suit) $max[] = $this->ranks[$key];
+//
+//        return max($max);
 
-        return max($max);
+        $ranks = $this->getFlushRanks();
+        rsort($ranks);
+        while (count($ranks) > 5) unset($ranks[count($ranks) - 1]);
+        return $ranks;
     }
 
     /**
@@ -357,6 +410,7 @@ class Judger
     private function getTwoPairsKicker(): array
     {
         $ranks = array_keys($this->rankValues, 2);
+        rsort($ranks);
         return array_merge($ranks, $this->getHighCards(1, $ranks));
     }
 
@@ -387,9 +441,6 @@ class Judger
     {
         return $this->getHighCards(5);
     }
-
-
-
 
 
 
@@ -427,7 +478,7 @@ class Judger
            foreach (array_keys($ranks, $ignoreRank) as $ignoreKey)
                unset($ranks[$ignoreKey]);
 
-        sort($ranks);
+        rsort($ranks);
 
         for ($i = 0; $i < $amount; $i++) $return[] = $ranks[$i];
 

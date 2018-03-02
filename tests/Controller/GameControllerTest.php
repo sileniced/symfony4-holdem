@@ -38,7 +38,8 @@ class GameControllerTest extends TestCase
 
         $game = new Game($table, false);
 
-        $this->gameController = new GameController($game);
+        $this->gameController = new GameController();
+        $this->gameController->addGame($game);
 
         $this->gameController->startAction();
     }
@@ -50,6 +51,8 @@ class GameControllerTest extends TestCase
 
     public function testThatPlayerCanCall()
     {
+        $this->assertEquals(3, $this->gameController->game->getPoint());
+
         $this->gameController->CallAction();
         $this->assertEquals(48, $this->gameController->game->getPlayerChips(3));
         $this->assertEquals(4, $this->gameController->game->getPoint());
@@ -73,21 +76,41 @@ class GameControllerTest extends TestCase
 
     public function testThatSmallBigBlindPlayerCallsCorrectly()
     {
-        $this->assertEquals(49, $this->gameController->game->getPlayerChips(1));
+
+        $this->assertEquals(3, $this->gameController->game->getPoint(), "beginning point");
+        $this->assertEquals(50, $this->gameController->game->getPlayerChips(0), "before calling; the third / button caller");
+        $this->assertEquals(Game::SMALL_BLIND, $this->gameController->game->getHandStatus(1));
+        $this->assertEquals(Game::BIG_BLIND, $this->gameController->game->getHandStatus(2));
+        $this->assertEquals(3, $this->gameController->game->getPot());
+
+        $this->assertEquals(49, $this->gameController->game->getPlayerChips(1), "one chip should be taken from small blind");
+
         $this->gameController->CallAction();
-        $this->assertEquals(48, $this->gameController->game->getPlayerChips(3));
+        $this->assertEquals(5, $this->gameController->game->getPot());
+        $this->assertEquals(48, $this->gameController->game->getPlayerChips(3), "the first caller");
+
         $this->assertEquals(4, $this->gameController->game->getPoint());
         $this->gameController->CallAction();
-        $this->assertEquals(48, $this->gameController->game->getPlayerChips(4));
+        $this->assertEquals(7, $this->gameController->game->getPot());
+        $this->assertEquals(48, $this->gameController->game->getPlayerChips(4), "the second caller");
+
+
         $this->assertEquals(0, $this->gameController->game->getPoint());
+        $this->assertNotEquals(Game::SMALL_BLIND, $this->gameController->game->getHandStatus(0));
+        $this->assertEquals(50, $this->gameController->game->getPlayerChips(0), "before calling second check; the third / button caller");
+        $this->assertEquals(2, $this->gameController->game->getCall());
         $this->gameController->CallAction();
-        $this->assertEquals(48, $this->gameController->game->getPlayerChips(0));
+        $this->assertEquals(9, $this->gameController->game->getPot());
+        $this->assertEquals($this->gameController->game->getPlayer(0)->getChips(), $this->gameController->game->getPlayerChips(0));
+        $this->assertEquals(48, $this->gameController->game->getPlayerChips(0), "the third / button caller");
+
         $this->assertEquals(1, $this->gameController->game->getPoint());
         $this->gameController->CallAction();
-        $this->assertEquals(48, $this->gameController->game->getPlayerChips(1));
+        $this->assertEquals(48, $this->gameController->game->getPlayerChips(1), "Mr. small blinds called");
+
         $this->assertEquals(2, $this->gameController->game->getPoint());
         $this->gameController->CallAction();
-        $this->assertEquals(48, $this->gameController->game->getPlayerChips(2));
+        $this->assertEquals(48, $this->gameController->game->getPlayerChips(2), "Mr. BIG blinds called");
     }
 
     public function testThatSmallBigBlindStillCallsCorrectlyAfterRaises()
@@ -184,6 +207,7 @@ class GameControllerTest extends TestCase
         $this->gameController->CallAction();
         $this->gameController->CallAction();
         $this->assertEquals(Game::SHOWDOWN, $this->gameController->game->getStatus());
+
     }
 
 

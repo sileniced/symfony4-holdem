@@ -106,7 +106,9 @@ class Table
      */
     public function getPlayers(): array
     {
+//        var_dump(array_filter($this->seats));
         return array_filter($this->seats);
+
     }
 
     /**
