@@ -6,7 +6,7 @@
  * Time: 22:27
  */
 
-namespace App\Entity;
+namespace App\Services;
 
 
 /**
@@ -24,23 +24,13 @@ class Deck
     private $cards = [];
 
     /**
-     * Deck constructor.
-     * @param bool $shuffle
-     */
-    public function __construct(bool $shuffle = true)
-    {
-        $this->initialize();
-        if ($shuffle) $this->shuffle();
-    }
-
-    /**
      *
      */
-    private function initialize(): void
+    public function initialize(): void
     {
         for ($i = 0; $i < 4; $i++){
             for ($ii = 0; $ii < 13; $ii++){
-                $this->cards[] = new Card($i, $ii);
+                $this->cards[] = ["suit" => $i, "rank" => $ii];
             }
         }
     }
@@ -83,9 +73,9 @@ class Deck
 //    }
 
     /**
-     * @return Card
+     * @return array of a
      */
-    public function takeTop(): Card
+    public function takeTop(): array
     {
         return array_pop($this->cards);
     }
@@ -97,7 +87,7 @@ class Deck
         return $cards;
     }
 
-    public function getCard(int $position): Card
+    public function getCard(int $position): array
     {
         return $this->cards[$position];
     }

@@ -28,18 +28,6 @@ use Symfony\Component\Serializer\Serializer;
  */
 class GameController extends Controller
 {
-    /**
-     * @var Game
-     */
-    public $game;
-
-    /**
-     * @param Game $game
-     */
-    public function addGame(Game $game)
-    {
-        $this->game = $game;
-    }
 
     /**
      *
@@ -148,7 +136,7 @@ class GameController extends Controller
 
 
     /**
-     *
+     * @Route("/call")
      */
     public function CallAction(): void
     {
@@ -158,6 +146,7 @@ class GameController extends Controller
     }
 
     /**
+     * @Route("/raise/{amount}")
      * @param int $amount
      */
     public function RaiseAction(int $amount): void
@@ -169,7 +158,7 @@ class GameController extends Controller
     }
 
     /**
-     *
+     * @Route("/fold")
      */
     public function FoldAction(): void
     {
@@ -179,7 +168,7 @@ class GameController extends Controller
     }
 
     /**
-     *
+     * @Route("/check")
      */
     public function CheckAction(): void
     {
@@ -188,6 +177,7 @@ class GameController extends Controller
     }
 
     /**
+     * @Route("/bet/{amount}")
      * @param int $amount
      */
     public function BetAction(int $amount): void
@@ -206,44 +196,30 @@ class GameController extends Controller
 
     /**
      * @return Response
-     * @Route("/test", name="testCards")
+     * @Route("/", name="render")
      */
-    public function letsTestAction(): Response
+    public function renderAction(): Response
     {
-        $this->makeCards();
-
-        return $this->render('Game/Game.html.twig', [
-            "game" => $this->game
-        ]);
-    }
-
-    /**
-     * @return Response
-     * @Route("/test/react", name="testReact")
-     */
-    public function testReactRenderAction(): Response
-    {
-        return $this->render('Game/ReactTest.html.twig');
+        return $this->render('base.html.twig');
     }
 
     /**
      * @return JsonResponse
      * @Method("GET")
-     * @Route("/test/react/json", name="testReactCards")
+     * @Route("/data", name="data")
      */
-    public function testReactJSONAction(): Response
+    public function dataAction(): Response
     {
-        $this->makeCards();
+        $game = new Game($this->fakeTable());
 
+        $this->startAction();
 
         $serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
 
-
-
-        return new Response($serializer->serialize($this->game, 'json'));
+        return new Response($serializer->serialize($game, 'json'));
     }
 
-    private function makeCards(): void
+    private function fakeTable(): Table
     {
         $table = new Table();
         $names = ["Daan","Vrin","Rolf","John","Fizz","Cass","Anda","Tour","Ding","Dong"];
@@ -252,13 +228,15 @@ class GameController extends Controller
             $table->addPlayer($player, $key);
         }
 
-        $this->addGame(new Game($table));
-        $this->startAction();
-        $this->flopAction();
-        $this->riverAction();
-        $this->turnAction();
+        return $table;
 
-        $this->showAction();
+//        $this->addGame(new Game($table));
+//        $this->startAction();
+//        $this->flopAction();
+//        $this->riverAction();
+//        $this->turnAction();
+//
+//        $this->showAction();
     }
 
 

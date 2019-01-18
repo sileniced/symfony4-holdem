@@ -8,8 +8,8 @@
 
 namespace App\Tests\Entity;
 
-use App\Entity\Card;
-use App\Entity\Deck;
+use App\Services\Card;
+use App\Services\Deck;
 use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 
 /**

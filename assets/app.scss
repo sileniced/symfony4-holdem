@@ -1,6 +1,12 @@
+@import '~bootstrap-sass/assets/stylesheets/bootstrap';
+
 // customize some Bootstrap variables
 $brand-primary: darken(#428bca, 20%);
 
 .player {
   margin-bottom: 5rem;
+}
+
+.pkr-card {
+  width: 4rem;
 }

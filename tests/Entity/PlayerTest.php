@@ -9,7 +9,7 @@
 namespace App\Tests\Entity;
 
 
-use App\Entity\Player;
+use App\Services\Player;
 use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 
 /**

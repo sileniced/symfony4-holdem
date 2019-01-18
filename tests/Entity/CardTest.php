@@ -9,7 +9,7 @@
 namespace App\Tests\Entity;
 
 
-use App\Entity\Card;
+use App\Services\Card;
 use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 
 class CardTest extends TestCase

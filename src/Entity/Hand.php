@@ -7,42 +7,54 @@
  */
 
 namespace App\Entity;
+use App\Services\Card;
+use Doctrine\ORM\Mapping as ORM;
 
 
 /**
  * Class Hand
  * @package App\Entity
- */
-/**
- * Class Hand
- * @package App\Entity
+ * @ORM\Entity
+ * @ORM\Table(name="hand")
  */
 class Hand
 {
 
+
+    /**
+     * @var Game
+     * @ORM\ManyToOne(targetEntity="App\Entity\Game", inversedBy="hands")
+     */
+    private $Game;
+
     /**
      * @var int
+     * @ORM\Column(type="int")
      */
     private $seat;
 
     /**
-     * @var array
+     * @var array (two dimensional) of cards
+     * @ORM\Column(type="json_array")
      */
     private $cards;
 
     /**
      * @var string
+     * @ORM\Column(type="string")
      */
     private $status;
 
     /**
      * @var float
+     * @ORM\Column(type="float")
      */
     private $chips = 0;
 
 
     /**
      * @var array of strings of Hand specific @const in Game
+     * @ORM\Column(type="json_array")
      */
     private $history = [
         "game-status" => Game::PRE_HAND,
@@ -63,6 +75,7 @@ class Hand
 
     /**
      * @var array
+     * @ORM\Column(type="json_array")
      */
     private $judgement;
 
@@ -76,19 +89,19 @@ class Hand
     }
 
     /**
-     * @return int
-     */
-    public function getSeat(): int
-    {
-        return $this->seat;
-    }
-
-    /**
      * @param int $seat
      */
     public function setSeat(int $seat): void
     {
         $this->seat = $seat;
+    }
+
+    /**
+     * @return int
+     */
+    public function getSeat(): int
+    {
+        return $this->seat;
     }
 
     /**
@@ -147,31 +160,6 @@ class Hand
     }
 
     /**
-     * @param int $card
-     * @return Card
-     */
-    public function getCard(int $card): Card
-    {
-        return $this->cards[$card];
-    }
-
-    /**
-     * @param Card $card
-     */
-    public function addCard(Card $card): void
-    {
-        $this->cards[] = $card;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasFolded(): bool
-    {
-        return $this->status == Game::FOLDED;
-    }
-
-    /**
      * @return array
      */
     public function getCards(): array
@@ -188,6 +176,31 @@ class Hand
     }
 
     /**
+     * @param int $card
+     * @return array
+     */
+    public function getCard(int $card): array
+    {
+        return $this->cards[$card];
+    }
+
+    /**
+     * @param array $card
+     */
+    public function addCard(array $card): void
+    {
+        $this->cards[] = $card;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasFolded(): bool
+    {
+        return $this->status == Game::FOLDED;
+    }
+
+    /**
      * @return mixed
      */
     public function getJudgement(): array
@@ -201,5 +214,21 @@ class Hand
     public function setJudgement(array $judgement): void
     {
         $this->judgement = $judgement;
+    }
+
+    /**
+     * @return Game
+     */
+    public function getGame(): Game
+    {
+        return $this->Game;
+    }
+
+    /**
+     * @param Game $Game
+     */
+    public function setGame(Game $Game): void
+    {
+        $this->Game = $Game;
     }
 }

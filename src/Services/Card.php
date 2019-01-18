@@ -6,7 +6,10 @@
  * Time: 22:17
  */
 
-namespace App\Entity;
+namespace App\Services;
+
+
+use Doctrine\ORM\Mapping as ORM;
 
 
 class Card
@@ -24,24 +27,25 @@ class Card
 
     /**
      * @var integer
+     * @ORM\Column(type="integer")
      */
     private $suit;
 
     /**
      * @var integer
+     * @ORM\Column(type="integer")
      */
     private $rank;
 
 
     /**
      * Card constructor.
-     * @param int $suit
-     * @param int $rank
+     * @param array $card
      */
-    public function __construct(int $suit, int $rank)
+    public function __construct(array $card)
     {
-        $this->suit = $suit;
-        $this->rank = $rank;
+        $this->suit = $card['suit'];
+        $this->rank = $card['rank'];
     }
 
     /**
@@ -99,7 +103,7 @@ class Card
      */
     public function getPngName(): string
     {
-        return "cards/" . strtolower(str_replace(" ", "_", $this->getCardName())) . ".png";
+        return "/cards/" . strtolower(str_replace(" ", "_", $this->getCardName())) . ".png";
     }
 
 

@@ -10,9 +10,9 @@ namespace App\Tests\Controller;
 
 
 use App\Controller\GameController;
-use App\Entity\Game;
-use App\Entity\Player;
-use App\Entity\Table;
+use App\Services\Game;
+use App\Services\Player;
+use App\Services\Table;
 use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 
 class GameControllerTest extends TestCase

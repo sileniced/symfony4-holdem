@@ -9,9 +9,9 @@
 namespace App\Tests\Entity;
 
 
-use App\Entity\Card;
-use App\Entity\Deck;
-use App\Entity\Hand;
+use App\Services\Card;
+use App\Services\Deck;
+use App\Services\Hand;
 use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 
 class HandTest extends TestCase

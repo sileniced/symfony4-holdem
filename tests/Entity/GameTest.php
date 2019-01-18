@@ -9,11 +9,11 @@
 namespace App\Tests\Entity;
 
 
-use App\Entity\Game;
-use App\Entity\Card;
-use App\Entity\Deck;
-use App\Entity\Player;
-use App\Entity\Table;
+use App\Services\Game;
+use App\Services\Card;
+use App\Services\Deck;
+use App\Services\Player;
+use App\Services\Table;
 use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 
 class GameTest extends TestCase
